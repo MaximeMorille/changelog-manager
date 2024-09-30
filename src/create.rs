@@ -1,6 +1,4 @@
-use std::{
-    str::FromStr,
-};
+use std::str::FromStr;
 
 use json_writer::{JSONObjectWriter, JSONWriterValue, PrettyJSONWriter};
 use slug::slugify;
@@ -62,10 +60,7 @@ impl JSONWriterValue for Entry {
                 EntryType::Technical => "Technical",
             },
         );
-        obj.value(
-            "isBreakingChange",
-            self.is_breaking_change.unwrap_or(false),
-        );
+        obj.value("isBreakingChange", self.is_breaking_change.unwrap_or(false));
         obj.value("issue", self.issue);
         obj.end();
     }

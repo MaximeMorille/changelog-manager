@@ -1,8 +1,4 @@
-use std::{
-
-    fs::File,
-    io::prelude::*,
-};
+use std::{fs::File, io::prelude::*};
 
 pub fn write_entry(filename: String, buffer: String) {
     check_folder_existence();

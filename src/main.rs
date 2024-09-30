@@ -2,8 +2,8 @@ use clap::{Args, Parser, Subcommand};
 use git_info::{GitInfo, GitInfoProvider};
 
 mod create;
-mod git_info;
 mod fs_manager;
+mod git_info;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]

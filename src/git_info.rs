@@ -14,8 +14,14 @@ pub trait GitInfoProvider {
 impl GitInfoProvider for GitInfo {
     fn new() -> Self {
         GitInfo {
-            username: execute_git_command(["config", "--get", "user.name"], "Failed to get current git user"),
-            branch: execute_git_command(["rev-parse", "--abbrev-ref", "HEAD"], "Failed to get current git branch"),
+            username: execute_git_command(
+                ["config", "--get", "user.name"],
+                "Failed to get current git user",
+            ),
+            branch: execute_git_command(
+                ["rev-parse", "--abbrev-ref", "HEAD"],
+                "Failed to get current git branch",
+            ),
         }
     }
 
