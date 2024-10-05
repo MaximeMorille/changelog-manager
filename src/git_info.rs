@@ -7,7 +7,7 @@ pub struct GitInfo {
 
 pub trait GitInfoProvider {
     fn new() -> Self;
-    fn get_branch(&self) -> String;
+    fn get_branch(&self) -> &String;
     fn get_username(&self) -> String;
 }
 
@@ -25,8 +25,8 @@ impl GitInfoProvider for GitInfo {
         }
     }
 
-    fn get_branch(&self) -> String {
-        self.branch.clone()
+    fn get_branch(&self) -> &String {
+        &self.branch
     }
 
     fn get_username(&self) -> String {

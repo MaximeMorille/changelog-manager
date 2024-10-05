@@ -1,9 +1,11 @@
-use clap::{Args, Parser, Subcommand};
-use git_info::{GitInfo, GitInfoProvider};
+use std::str::FromStr;
 
-mod create;
-mod fs_manager;
-mod git_info;
+use changelog_manager::{
+    create::{create_changelog_entry, start_interactive_mode},
+    entry::{Builder, Entry, EntryType},
+    git_info::{GitInfo, GitInfoProvider},
+};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -26,8 +28,12 @@ enum Commands {
     },
     /// Merge all entries in the CHANGELOG file
     Merge {
-        #[arg(short, long)]
+        /// Version of the new release to add to the CHANGELOG file
+        #[arg(short, long, required = true)]
         version: String,
+        /// Date of the new release (default: today)
+        #[arg(short, long)]
+        date: String,
     },
 }
 
@@ -51,6 +57,36 @@ struct EntryFields {
     issue: Option<u32>,
 }
 
+fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
+    let entry_type = EntryType::from_str(
+        fields
+            .entry_type
+            .as_ref()
+            .expect("entry_type is a mandatory argument")
+            .as_str(),
+    )
+    .expect("Invalid entry type");
+
+    // call git to get the current user
+    let default_user = info.get_username();
+
+    let entry = Entry::builder()
+        .author(fields.author.as_ref().unwrap_or(&default_user).to_string())
+        .title(
+            fields
+                .title
+                .as_ref()
+                .expect("title is mandatory")
+                .to_string(),
+        )
+        .entry_type(entry_type)
+        .is_breaking_change(fields.is_breaking_change)
+        .issue(*fields.issue.as_ref().expect("issue is mandatory"))
+        .build();
+
+    create_changelog_entry(&entry, info.get_branch())
+}
+
 fn main() {
     let cli = Cli::parse();
     let git_info = GitInfo::new();
@@ -64,20 +100,25 @@ fn main() {
             interactive,
         }) => {
             if *interactive {
-                create::start_interactive_mode();
+                start_interactive_mode(git_info);
             } else {
-                create::process_static_input(create_options, git_info);
+                process_static_input(create_options, git_info);
             }
         }
-        Some(Commands::Merge { version }) => {
-            println!("Merging version {version}");
+        Some(Commands::Merge { version, date }) => {
+            // merge::
         }
         None => {}
     }
 }
 
-#[test]
-fn verify_cli() {
-    use clap::CommandFactory;
-    Cli::command().debug_assert()
+#[cfg(test)]
+mod tests {
+    use crate::Cli;
+
+    #[test]
+    fn verify_cli() {
+        use clap::CommandFactory;
+        Cli::command().debug_assert()
+    }
 }
