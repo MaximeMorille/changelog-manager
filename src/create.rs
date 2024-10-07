@@ -6,7 +6,6 @@ use crate::{
     git_info::GitInfo,
 };
 
-// on veut créer une entrée à partir des options passées en entrée
 pub fn start_interactive_mode(info: GitInfo) {
     panic!("Not implemented yet");
 }

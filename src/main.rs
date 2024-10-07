@@ -1,10 +1,12 @@
 use std::str::FromStr;
 
 use changelog_manager::{
-    create::{create_changelog_entry, start_interactive_mode},
+    create,
     entry::{Builder, Entry, EntryType},
     git_info::{GitInfo, GitInfoProvider},
+    merge,
 };
+use chrono::{DateTime, Local};
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
@@ -33,7 +35,9 @@ enum Commands {
         version: String,
         /// Date of the new release (default: today)
         #[arg(short, long)]
-        date: String,
+        date: Option<DateTime<Local>>,
+        /// Path to the CHANGELOG file (default: CHANGELOG.md)
+        changelog: Option<String>,
     },
 }
 
@@ -44,11 +48,11 @@ struct EntryFields {
     #[arg(short, long)]
     author: Option<String>,
     /// Title of the change
-    #[arg(short, long, required = true)]
+    #[arg(required = true)]
     title: Option<String>,
     // Type of change
     #[arg(short, long, required = true)]
-    entry_type: Option<String>,
+    r#type: Option<String>,
     /// Is this a breaking change? (default: false)
     #[arg(short = 'b', long)]
     is_breaking_change: Option<bool>,
@@ -60,7 +64,7 @@ struct EntryFields {
 fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
     let entry_type = EntryType::from_str(
         fields
-            .entry_type
+            .r#type
             .as_ref()
             .expect("entry_type is a mandatory argument")
             .as_str(),
@@ -79,12 +83,12 @@ fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
                 .expect("title is mandatory")
                 .to_string(),
         )
-        .entry_type(entry_type)
+        .r#type(entry_type)
         .is_breaking_change(fields.is_breaking_change)
         .issue(*fields.issue.as_ref().expect("issue is mandatory"))
         .build();
 
-    create_changelog_entry(&entry, info.get_branch())
+    create::create_changelog_entry(&entry, info.get_branch())
 }
 
 fn main() {
@@ -100,13 +104,13 @@ fn main() {
             interactive,
         }) => {
             if *interactive {
-                start_interactive_mode(git_info);
+                create::start_interactive_mode(git_info);
             } else {
                 process_static_input(create_options, git_info);
             }
         }
-        Some(Commands::Merge { version, date }) => {
-            // merge::
+        Some(Commands::Merge { version, date, changelog }) => {
+            merge::merge_entries(version, date, changelog);
         }
         None => {}
     }

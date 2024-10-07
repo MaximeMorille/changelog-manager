@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{ser::PrettyFormatter, Serializer};
-use std::str::FromStr;
+use std::{fmt::{Display, Formatter}, str::FromStr};
 
-#[derive(Default, Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Default, Serialize, Deserialize, PartialEq, Debug, Eq, Hash)]
 pub enum EntryType {
     Added,
     #[default]
@@ -31,13 +31,27 @@ impl FromStr for EntryType {
     }
 }
 
+impl Display for EntryType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EntryType::Added => write!(f, "Added"),
+            EntryType::Changed => write!(f, "Changed"),
+            EntryType::Fixed => write!(f, "Fixed"),
+            EntryType::Removed => write!(f, "Removed"),
+            EntryType::Deprecated => write!(f, "Deprecated"),
+            EntryType::Security => write!(f, "Security"),
+            EntryType::Technical => write!(f, "Technical"),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Entry {
     author: String,
     title: String,
     description: Option<String>,
-    r#type: EntryType,
+    pub r#type: EntryType,
     is_breaking_change: bool,
     issue: u32,
 }
@@ -45,6 +59,20 @@ pub struct Entry {
 impl Entry {
     pub fn builder() -> EntryBuilder {
         EntryBuilder::default()
+    }
+
+    pub fn to_markdown(&self) -> String {
+        let prefix = match self.is_breaking_change {
+            true => "**BREAKING CHANGE** ",
+            false => "",
+        };
+
+        let description = match &self.description {
+            Some(description) => format!("\n{}", description),
+            None => "".to_string(),
+        };
+
+        format!("- [{prefix}{title}]({issue}){description}\n", prefix = prefix, title = self.title, issue = self.issue, description = description)
     }
 }
 
@@ -62,7 +90,7 @@ pub trait Builder {
     fn author(self, author: String) -> Self;
     fn title(self, title: String) -> Self;
     fn description(self, description: Option<String>) -> Self;
-    fn entry_type(self, entry_type: EntryType) -> Self;
+    fn r#type(self, entry_type: EntryType) -> Self;
     fn is_breaking_change(self, is_breaking_change: Option<bool>) -> Self;
     fn issue(self, issue: u32) -> Self;
     fn build(self) -> Entry;
@@ -106,7 +134,7 @@ impl Builder for EntryBuilder {
         self
     }
 
-    fn entry_type(mut self, entry_type: EntryType) -> Self {
+    fn r#type(mut self, entry_type: EntryType) -> Self {
         self.r#type = entry_type;
         self
     }

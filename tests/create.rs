@@ -33,7 +33,7 @@ fn test_create() {
         .author("username".to_string())
         .title("Some title".to_string())
         .description(Some("A random description".to_string()))
-        .entry_type(EntryType::Added)
+        .r#type(EntryType::Added)
         .is_breaking_change(Some(false))
         .issue(42)
         .build();
@@ -44,12 +44,12 @@ fn test_create() {
             .expect("Error while checking if test-create.json exists"),
         "test-create.json should exist"
     );
-    
+
     let expected_entry = Entry::builder()
         .author("username".to_string())
         .title("Some title".to_string())
         .description(Some("A random description".to_string()))
-        .entry_type(EntryType::Added)
+        .r#type(EntryType::Added)
         .issue(42)
         .build();
     assert_is_valid_json("./unreleased_changelogs/test-create.json", &expected_entry);
