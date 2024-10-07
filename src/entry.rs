@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{ser::PrettyFormatter, Serializer};
-use std::{fmt::{Display, Formatter}, str::FromStr};
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
-#[derive(Default, Serialize, Deserialize, PartialEq, Debug, Eq, Hash)]
+#[derive(Default, Serialize, Deserialize, PartialEq, Debug, Eq, Hash, Ord, PartialOrd)]
 pub enum EntryType {
     Added,
     #[default]
@@ -68,11 +71,17 @@ impl Entry {
         };
 
         let description = match &self.description {
-            Some(description) => format!("\n{}", description),
+            Some(description) => format!("\n  {}", description),
             None => "".to_string(),
         };
 
-        format!("- [{prefix}{title}]({issue}){description}\n", prefix = prefix, title = self.title, issue = self.issue, description = description)
+        format!(
+            "- [{prefix}{title}]({issue}){description}\n",
+            prefix = prefix,
+            title = self.title,
+            issue = self.issue,
+            description = description
+        )
     }
 }
 
@@ -163,6 +172,8 @@ impl Builder for EntryBuilder {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use pretty_assertions::assert_eq;
 
     use crate::entry::{Entry, EntryType, Serializable};
@@ -211,5 +222,65 @@ mod tests {
     "issue": 123
 }"#
         );
+    }
+
+    #[test]
+    fn test_complete_entry_to_markdown() {
+        let entry = Entry {
+            author: "Maxime Morille".to_string(),
+            title: "Test".to_string(),
+            description: Some("This is a test".to_string()),
+            r#type: EntryType::Added,
+            is_breaking_change: true,
+            issue: 123,
+        };
+
+        assert_eq!(
+            "- [**BREAKING CHANGE** Test](123)\n  This is a test\n",
+            entry.to_markdown()
+        );
+    }
+
+    #[test]
+    fn test_simplest_entry_to_markdown() {
+        let entry = Entry {
+            author: "Maxime Morille".to_string(),
+            title: "Test".to_string(),
+            r#type: EntryType::Added,
+            issue: 123,
+            description: None,
+            is_breaking_change: false,
+        };
+
+        assert_eq!("- [Test](123)\n", entry.to_markdown());
+    }
+
+    #[rstest::rstest]
+    #[case(EntryType::Added, "Added")]
+    #[case(EntryType::Changed, "Changed")]
+    #[case(EntryType::Fixed, "Fixed")]
+    #[case(EntryType::Removed, "Removed")]
+    #[case(EntryType::Deprecated, "Deprecated")]
+    #[case(EntryType::Security, "Security")]
+    #[case(EntryType::Technical, "Technical")]
+    fn test_entry_type_display(#[case] entry_type: EntryType, #[case] expected: &str) {
+        assert_eq!(entry_type.to_string(), expected);
+    }
+
+    #[rstest::rstest]
+    #[case("ADDED", EntryType::Added)]
+    #[case("CHANGED", EntryType::Changed)]
+    #[case("FIXED", EntryType::Fixed)]
+    #[case("REMOVED", EntryType::Removed)]
+    #[case("DEPRECATED", EntryType::Deprecated)]
+    #[case("SECURITY", EntryType::Security)]
+    #[case("TECHNICAL", EntryType::Technical)]
+    fn test_entry_type_from_str(#[case] entry_type: &str, #[case] expected: EntryType) {
+        assert_eq!(EntryType::from_str(entry_type).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_entry_type_from_str_invalid() {
+        assert!(EntryType::from_str("INVALID").is_err());
     }
 }

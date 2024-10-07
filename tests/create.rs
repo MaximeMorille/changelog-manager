@@ -6,7 +6,7 @@ use changelog_manager::{
 };
 use pretty_assertions::assert_eq;
 
-fn assert_is_valid_json(filename: &str, expected_entry: &Entry) -> () {
+fn assert_is_valid_json(filename: &str, expected_entry: &Entry) {
     let entry = fs::read_to_string(filename)
         .map(|content| Entry::from_json(&content))
         .expect("Error while reading file");

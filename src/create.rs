@@ -14,3 +14,17 @@ pub fn create_changelog_entry(entry: &Entry, branch: &String) {
     let filename = slugify(branch);
     write_entry(filename, entry.to_json());
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        create::start_interactive_mode,
+        git_info::{GitInfo, GitInfoProvider},
+    };
+
+    #[test]
+    #[should_panic]
+    fn test_start_interactive_mode() {
+        start_interactive_mode(GitInfo::new());
+    }
+}

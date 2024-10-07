@@ -49,43 +49,30 @@ struct EntryFields {
     author: Option<String>,
     /// Title of the change
     #[arg(required = true)]
-    title: Option<String>,
+    title: String,
     // Type of change
     #[arg(short, long, required = true)]
-    r#type: Option<String>,
+    r#type: String,
     /// Is this a breaking change? (default: false)
     #[arg(short = 'b', long)]
     is_breaking_change: Option<bool>,
     /// Issue number
     #[arg(short = 'n', long, required = true)]
-    issue: Option<u32>,
+    issue: u32,
 }
 
 fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
-    let entry_type = EntryType::from_str(
-        fields
-            .r#type
-            .as_ref()
-            .expect("entry_type is a mandatory argument")
-            .as_str(),
-    )
-    .expect("Invalid entry type");
+    let entry_type = EntryType::from_str(fields.r#type.as_str()).expect("Invalid entry type");
 
     // call git to get the current user
     let default_user = info.get_username();
 
     let entry = Entry::builder()
         .author(fields.author.as_ref().unwrap_or(&default_user).to_string())
-        .title(
-            fields
-                .title
-                .as_ref()
-                .expect("title is mandatory")
-                .to_string(),
-        )
+        .title(fields.title.to_string())
         .r#type(entry_type)
         .is_breaking_change(fields.is_breaking_change)
-        .issue(*fields.issue.as_ref().expect("issue is mandatory"))
+        .issue(fields.issue)
         .build();
 
     create::create_changelog_entry(&entry, info.get_branch())
@@ -109,7 +96,11 @@ fn main() {
                 process_static_input(create_options, git_info);
             }
         }
-        Some(Commands::Merge { version, date, changelog }) => {
+        Some(Commands::Merge {
+            version,
+            date,
+            changelog,
+        }) => {
             merge::merge_entries(version, date, changelog);
         }
         None => {}
