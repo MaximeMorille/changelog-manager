@@ -4,7 +4,10 @@ use changelog_manager::{
     create,
     entry::{Builder, Entry, EntryType, Serializable},
 };
+use common::setup_test_env;
 use pretty_assertions::assert_eq;
+
+mod common;
 
 fn assert_is_valid_json(filename: &str, expected_entry: &Entry) {
     let entry = fs::read_to_string(filename)
@@ -16,17 +19,12 @@ fn assert_is_valid_json(filename: &str, expected_entry: &Entry) {
 
 #[test]
 fn test_create() {
+    let temp_dir = setup_test_env();
     assert!(
         fs::exists("./unreleased_changelogs")
             .expect("Error while checking if unreleased_changelogs exists"),
         "unreleased_changelogs should exist"
     );
-
-    if fs::exists("./unreleased_changelogs/test-create.json")
-        .expect("Error while checking if test-create.json exists")
-    {
-        fs::remove_file("./unreleased_changelogs/test-create.json").unwrap();
-    }
 
     let branch = "test_create".to_string();
     let entry = Entry::builder()
@@ -35,7 +33,7 @@ fn test_create() {
         .description(Some("A random description".to_string()))
         .r#type(EntryType::Added)
         .is_breaking_change(Some(false))
-        .issue(42)
+        .issue("42".to_string())
         .build();
     create::create_changelog_entry(&entry, &branch);
 
@@ -50,7 +48,8 @@ fn test_create() {
         .title("Some title".to_string())
         .description(Some("A random description".to_string()))
         .r#type(EntryType::Added)
-        .issue(42)
+        .issue("42".to_string())
         .build();
     assert_is_valid_json("./unreleased_changelogs/test-create.json", &expected_entry);
+    drop(temp_dir);
 }

@@ -56,7 +56,7 @@ pub struct Entry {
     description: Option<String>,
     pub r#type: EntryType,
     is_breaking_change: bool,
-    issue: u32,
+    issue: String,
 }
 
 impl Entry {
@@ -92,7 +92,7 @@ pub struct EntryBuilder {
     description: Option<String>,
     r#type: EntryType,
     is_breaking_change: Option<bool>,
-    issue: u32,
+    issue: String,
 }
 
 pub trait Builder {
@@ -101,7 +101,7 @@ pub trait Builder {
     fn description(self, description: Option<String>) -> Self;
     fn r#type(self, entry_type: EntryType) -> Self;
     fn is_breaking_change(self, is_breaking_change: Option<bool>) -> Self;
-    fn issue(self, issue: u32) -> Self;
+    fn issue(self, issue: String) -> Self;
     fn build(self) -> Entry;
 }
 
@@ -153,7 +153,7 @@ impl Builder for EntryBuilder {
         self
     }
 
-    fn issue(mut self, issue: u32) -> Self {
+    fn issue(mut self, issue: String) -> Self {
         self.issue = issue;
         self
     }
@@ -184,7 +184,7 @@ mod tests {
             author: "Maxime Morille".to_string(),
             title: "Test".to_string(),
             r#type: EntryType::Added,
-            issue: 123,
+            issue: "123".to_string(),
             description: None,
             is_breaking_change: false,
         };
@@ -196,7 +196,7 @@ mod tests {
     "description": null,
     "type": "Added",
     "isBreakingChange": false,
-    "issue": 123
+    "issue": "123"
 }"#
         );
     }
@@ -209,7 +209,7 @@ mod tests {
             description: Some("This is a test".to_string()),
             r#type: EntryType::Added,
             is_breaking_change: true,
-            issue: 123,
+            issue: "123".to_string(),
         };
         assert_eq!(
             entry.to_json(),
@@ -219,7 +219,7 @@ mod tests {
     "description": "This is a test",
     "type": "Added",
     "isBreakingChange": true,
-    "issue": 123
+    "issue": "123"
 }"#
         );
     }
@@ -232,7 +232,7 @@ mod tests {
             description: Some("This is a test".to_string()),
             r#type: EntryType::Added,
             is_breaking_change: true,
-            issue: 123,
+            issue: "123".to_string(),
         };
 
         assert_eq!(
@@ -247,7 +247,7 @@ mod tests {
             author: "Maxime Morille".to_string(),
             title: "Test".to_string(),
             r#type: EntryType::Added,
-            issue: 123,
+            issue: "123".to_string(),
             description: None,
             is_breaking_change: false,
         };

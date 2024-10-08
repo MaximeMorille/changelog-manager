@@ -2,13 +2,25 @@ use std::collections::BTreeMap;
 
 use chrono::{DateTime, Local};
 
-use crate::{entry::Entry, fs_manager};
+use crate::{
+    entry::{Entry, Serializable},
+    fs_manager,
+};
 
 // on veut juste combiner tous les fichiers en un, monter la version
 pub fn merge_entries(version: &String, date: &Option<DateTime<Local>>, changelog: &Option<String>) {
-    let entries = fs_manager::read_entries();
+    let entries = read_entries();
     let new_content = entries_to_string(entries, version, date);
     fs_manager::write_changelog(new_content, changelog)
+}
+
+fn read_entries() -> Vec<Entry> {
+    let json_entries = fs_manager::read_entries();
+    let entries = json_entries
+        .iter()
+        .map(Entry::from_json)
+        .collect();
+    entries
 }
 
 fn entries_to_string(
@@ -52,12 +64,13 @@ fn entries_to_string(
 
 #[cfg(test)]
 mod tests {
+    use assert_fs::{prelude::{PathChild, PathCreateDir}, TempDir};
     use chrono::{Local, TimeZone};
     use pretty_assertions::assert_eq;
 
     use crate::{
         entry::{Builder, Entry, EntryType},
-        merge::entries_to_string,
+        merge::{entries_to_string, read_entries},
     };
 
     #[test]
@@ -71,19 +84,19 @@ mod tests {
             Entry::builder()
                 .author("username".to_string())
                 .title("Some title".to_string())
-                .issue(42)
+                .issue("42".to_string())
                 .r#type(EntryType::Added)
                 .build(),
             Entry::builder()
                 .author("username".to_string())
                 .title("Another title".to_string())
-                .issue(43)
+                .issue("43".to_string())
                 .r#type(EntryType::Added)
                 .build(),
             Entry::builder()
                 .author("username".to_string())
                 .title("A final title".to_string())
-                .issue(64)
+                .issue("64".to_string())
                 .r#type(EntryType::Removed)
                 .is_breaking_change(Some(true))
                 .description(Some("A random description".to_string()))
@@ -96,5 +109,14 @@ mod tests {
             expected,
             entries_to_string(entries, &"1.0.0".to_string(), &date.single())
         );
+    }
+
+    #[test]
+    fn test_read_empty_entries() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        std::env::set_current_dir(&temp_dir).expect("Failed to set current directory");
+        temp_dir.child("unreleased_changelogs").create_dir_all().expect("Failed to create unreleased_changelogs directory");
+        let entries = read_entries();
+        assert!(entries.is_empty());
     }
 }

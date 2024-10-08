@@ -56,9 +56,9 @@ struct EntryFields {
     /// Is this a breaking change? (default: false)
     #[arg(short = 'b', long)]
     is_breaking_change: Option<bool>,
-    /// Issue number
-    #[arg(short = 'n', long, required = true)]
-    issue: u32,
+    /// Issue URL
+    #[arg(short = 'u', long, required = true)]
+    issue: String,
 }
 
 fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
@@ -72,7 +72,7 @@ fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
         .title(fields.title.to_string())
         .r#type(entry_type)
         .is_breaking_change(fields.is_breaking_change)
-        .issue(fields.issue)
+        .issue(fields.issue.to_string())
         .build();
 
     create::create_changelog_entry(&entry, info.get_branch())
