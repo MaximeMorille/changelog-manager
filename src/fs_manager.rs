@@ -1,7 +1,4 @@
-use std::{
-    fs::File,
-    io::prelude::*,
-};
+use std::{fs::File, io::prelude::*};
 
 const UNRELEASED_CHANGELOGS_FOLDER: &str = "unreleased_changelogs";
 const DEFAULT_CHANGELOG_PATH: &str = "CHANGELOG.md";

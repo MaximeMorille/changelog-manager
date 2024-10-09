@@ -31,7 +31,7 @@ enum Commands {
     /// Merge all entries in the CHANGELOG file
     Merge {
         /// Version of the new release to add to the CHANGELOG file
-        #[arg(short, long, required = true)]
+        #[arg(required = true)]
         version: String,
         /// Date of the new release (default: today)
         #[arg(short, long)]
@@ -59,6 +59,9 @@ struct EntryFields {
     /// Issue URL
     #[arg(short = 'u', long, required = true)]
     issue: String,
+    /// Description of the change
+    #[arg(short, long)]
+    description: Option<String>,
 }
 
 fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
@@ -73,6 +76,7 @@ fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
         .r#type(entry_type)
         .is_breaking_change(fields.is_breaking_change)
         .issue(fields.issue.to_string())
+        .description(fields.description.as_ref().map(|s| s.to_string()))
         .build();
 
     create::create_changelog_entry(&entry, info.get_branch())

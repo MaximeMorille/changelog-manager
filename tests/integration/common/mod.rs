@@ -1,7 +1,8 @@
 use std::env;
 
+use assert_cmd::Command;
 use assert_fs::{
-    prelude::{PathChild, PathCreateDir},
+    prelude::{FileWriteStr, PathChild, PathCreateDir},
     TempDir,
 };
 use changelog_manager::entry::Builder;
@@ -9,6 +10,27 @@ use changelog_manager::entry::Builder;
 pub fn setup_test_env() -> TempDir {
     let root = TempDir::new().unwrap();
     env::set_current_dir(&root).expect("Failed to setup root testing directory");
+
+    Command::new("git").args(["init"]).assert().success();
+
+    Command::new("git")
+        .args(["config", "--local", "user.name", "Test User"])
+        .assert()
+        .success();
+
+    Command::new("git")
+        .args(["checkout", "-b", "test_branch"])
+        .assert()
+        .success();
+
+    root.child("README.md").write_str("# Test Project").unwrap();
+
+    Command::new("git").args(["add", "."]).assert().success();
+
+    Command::new("git")
+        .args(["commit", "-m", "Initial commit"])
+        .assert()
+        .success();
 
     let unreleased_changelogs = root.child("unreleased_changelogs");
     unreleased_changelogs

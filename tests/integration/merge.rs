@@ -1,8 +1,8 @@
 use std::fs;
 
 use crate::common::{add_entry, setup_test_env};
-use changelog_manager::{entry, merge};
-use chrono::{Local, TimeZone};
+use assert_cmd::Command;
+use changelog_manager::entry;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -32,8 +32,15 @@ fn test_merge_entries() {
         Some(true),
         "44",
     );
-    let release_date = Local.with_ymd_and_hms(2024, 02, 15, 11, 02, 00);
-    merge::merge_entries(&"1.0.0".to_string(), &release_date.single(), &None);
+
+    Command::cargo_bin("changelog_manager")
+        .expect("Failed to build binary")
+        .arg("merge")
+        .arg("1.0.0")
+        .arg("--date")
+        .arg("2024-02-15T11:02:00Z")
+        .assert()
+        .success();
 
     let content = fs::read_to_string("./CHANGELOG.md").expect("Error while reading CHANGELOG.md");
     assert_eq!(
