@@ -5,7 +5,7 @@ This project aims to provide a CLI tool to manage CHANGELOG entries, in order to
 ## Missing features
 
 - [X] create command to create an entry
-- [ ] merge command to merge entries in the CHANGELOG
+- [X] merge command to merge entries in the CHANGELOG
 - [ ] update CLI from Gitlab repository
 - [ ] interactive mode
 - [ ] manage a config from multiple sources (home directory, current directory, environment variables, CLI ?)
