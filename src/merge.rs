@@ -7,7 +7,6 @@ use crate::{
     fs_manager,
 };
 
-// on veut juste combiner tous les fichiers en un, monter la version
 pub fn merge_entries(version: &String, date: &Option<DateTime<Local>>, changelog: &Option<String>) {
     let entries = read_entries();
     let new_content = entries_to_string(entries, version, date);
@@ -16,10 +15,7 @@ pub fn merge_entries(version: &String, date: &Option<DateTime<Local>>, changelog
 
 fn read_entries() -> Vec<Entry> {
     let json_entries = fs_manager::read_entries();
-    let entries = json_entries
-        .iter()
-        .map(Entry::from_json)
-        .collect();
+    let entries = json_entries.iter().map(Entry::from_json).collect();
     entries
 }
 
@@ -64,7 +60,10 @@ fn entries_to_string(
 
 #[cfg(test)]
 mod tests {
-    use assert_fs::{prelude::{PathChild, PathCreateDir}, TempDir};
+    use assert_fs::{
+        prelude::{PathChild, PathCreateDir},
+        TempDir,
+    };
     use chrono::{Local, TimeZone};
     use pretty_assertions::assert_eq;
 
@@ -115,7 +114,10 @@ mod tests {
     fn test_read_empty_entries() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         std::env::set_current_dir(&temp_dir).expect("Failed to set current directory");
-        temp_dir.child("unreleased_changelogs").create_dir_all().expect("Failed to create unreleased_changelogs directory");
+        temp_dir
+            .child("unreleased_changelogs")
+            .create_dir_all()
+            .expect("Failed to create unreleased_changelogs directory");
         let entries = read_entries();
         assert!(entries.is_empty());
     }

@@ -1,13 +1,11 @@
 use std::fs;
 
+use crate::common::setup_test_env;
 use changelog_manager::{
     create,
     entry::{Builder, Entry, EntryType, Serializable},
 };
-use common::setup_test_env;
 use pretty_assertions::assert_eq;
-
-mod common;
 
 fn assert_is_valid_json(filename: &str, expected_entry: &Entry) {
     let entry = fs::read_to_string(filename)

@@ -1,6 +1,19 @@
-use std::{fs::File, io::prelude::*};
+use std::{
+    fs::File,
+    io::prelude::*,
+};
 
 const UNRELEASED_CHANGELOGS_FOLDER: &str = "unreleased_changelogs";
+const DEFAULT_CHANGELOG_PATH: &str = "CHANGELOG.md";
+const BASE_CHANGELOG_CONTENT: &str = r#"# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+"#;
 
 pub fn write_entry(filename: String, buffer: String) {
     check_folder_existence();
@@ -41,23 +54,37 @@ pub fn read_entries() -> Vec<String> {
 }
 
 pub fn write_changelog(content: String, changelog: &Option<String>) {
-    // panic!("Not implemented yet");
-    let mut file = File::create_new("CHANGELOG.md").expect("Unable to create file");
+    let changelog_path = match changelog {
+        Some(path) => path,
+        None => &DEFAULT_CHANGELOG_PATH.to_string(),
+    };
 
-    file.write_all(content.as_bytes())
-        .expect("Unable to write data");
+    check_changelog_existence(changelog_path);
 
-    if let Some(changelog) = changelog {
-        let mut file = File::create_new(changelog).expect("Unable to create file");
+    if content.is_empty() {
+        return;
+    }
 
-        file.write_all(content.as_bytes())
-            .expect("Unable to write data");
+    let current_content =
+        std::fs::read_to_string(changelog_path).expect("Error while reading file");
+    let new_content = current_content.replace(
+        "## [Unreleased]\n",
+        &format!("## [Unreleased]\n\n{}\n", content),
+    );
+    std::fs::write(changelog_path, new_content).expect("Error while writing file");
+}
+
+fn check_changelog_existence(changelog_path: &String) {
+    if !std::path::Path::new(changelog_path).exists() {
+        std::fs::create_dir_all(std::path::Path::new(changelog_path).parent().unwrap())
+            .expect("Unable to create folder");
+        std::fs::write(changelog_path, BASE_CHANGELOG_CONTENT).expect("Unable to create folder");
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::env;
+    use std::{env, fs};
 
     use assert_fs::{
         prelude::{PathChild, PathCreateDir},
@@ -118,6 +145,104 @@ mod tests {
         let entries = read_entries();
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[0], first_entry);
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_write_changelog() {
+        let temp_dir = setup_test_dir();
+        let changelog_path = "CHANGELOG.md".to_string();
+        let expected_content = r#"# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+"#;
+
+        super::write_changelog("".to_string(), &None);
+
+        let file_content =
+            std::fs::read_to_string(&changelog_path).expect("Error while reading file");
+        assert_eq!(file_content, expected_content);
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_write_changelog_with_specific_path() {
+        let temp_dir = setup_test_dir();
+        let changelog_path = "./subfolder/CHANGELOG.md".to_string();
+        let expected_content = r#"# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+New content
+"#;
+
+        super::write_changelog(
+            "New content".to_string(),
+            &Some("./subfolder/CHANGELOG.md".to_string()),
+        );
+
+        let file_content =
+            std::fs::read_to_string(&changelog_path).expect("Error while reading file");
+        assert_eq!(file_content, expected_content);
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_update_changelog() {
+        let temp_dir = setup_test_dir();
+        let changelog_path = "CHANGELOG.md".to_string();
+        let existing_content = r#"# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [1.2.3] - 2024-10-14
+
+### Added
+
+- Some new feature
+
+"#;
+
+        let expected_content = r#"# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+New content
+
+## [1.2.3] - 2024-10-14
+
+### Added
+
+- Some new feature
+
+"#;
+
+        fs::write(&changelog_path, existing_content).expect("Error while writing file");
+        super::write_changelog("New content".to_string(), &None);
+
+        let file_content =
+            std::fs::read_to_string(&changelog_path).expect("Error while reading file");
+        assert_eq!(file_content, expected_content);
         drop(temp_dir);
     }
 }
