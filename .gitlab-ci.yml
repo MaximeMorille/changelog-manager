@@ -1,0 +1,157 @@
+include:
+  - project: "braincube/misc/gitlabci-commons"
+    file:
+      - "gitlab-ci-default-workflow.yml"
+      - "gitlab-ci-send-changelog.yml"
+      - "gitlab-ci-diff-since-last-release.yml"
+    ref: "master"
+
+image: harbor.ipleanware.com/production/gitlab-ci/alpine/base
+
+# Do not declare stages here anymore
+
+build:
+  image: harbor.ipleanware.com/production/gitlab-ci/rust:1.65.0
+  stage: iaire
+  interruptible: true
+  script:
+    - rustup target add x86_64-unknown-linux-musl
+    - cargo build --release --target x86_64-apple-darwin --target x86_64-unknown-linux-musl
+    - mkdir x86_64-apple
+    - mkdir x86_64-linux
+    - mv target/x86_64-apple-darwin/release/changelog-manager* x86_64-apple
+    - rm x86_64-apple/*.d
+    - mv target/x86_64-unknown-linux-musl/release/changelog-manager* x86_64-linux
+    - rm x86_64-linux/*.d
+  artifacts:
+    paths:
+      - x86_64-apple
+      - x86_64-linux
+
+lint:
+  image: harbor.ipleanware.com/production/gitlab-ci/rust:1.65.0
+  stage: iaire
+  interruptible: true
+  script:
+    - rustup component add clippy rustfmt
+    - cargo fmt --all
+    - cargo clippy
+
+test:
+  image: harbor.ipleanware.com/production/gitlab-ci/rust:1.65.0
+  stage: iaire
+  interruptible: true
+  script:
+    - cargo install cargo-llvm-cov cargo-nextest
+    - cargo llvm-cov nextest --html
+  artifacts:
+    when: on_success
+    expire_in: "1 days"
+    paths:
+      - target/llvm-cov
+
+create_release:
+  stage: iaire
+  interruptible: true
+  variables:
+    VERSION: ""
+    RELEASE_CONTENT: ""
+  script:
+    - echo "Try to create version $VERSION with content $RELEASE_CONTENT"
+    - CREATE_PKG_URL="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager-create/$VERSION/changelog-manager-create"
+    - MERGE_PKG_URL="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager-merge/$VERSION/changelog-manager-merge"
+    - >
+      JSON_DATA=$(jq -n \
+         --arg version "$VERSION" \
+         --arg content "$RELEASE_CONTENT" \
+         --arg commit "$CI_COMMIT_SHA" \
+         --arg create_apple_url "${CREATE_PKG_URL}-x86_64-apple" \
+         --arg merge_apple_url "${MERGE_PKG_URL}-x86_64-apple" \
+         --arg create_linux_url "${CREATE_PKG_URL}-x86_64-linux" \
+         --arg merge_linux_url "${MERGE_PKG_URL}-x86_64-linux" \
+         '
+         {
+           name: $version,
+           tag_name: $version,
+           tag_message: $content,
+           description: $content,
+           ref: $commit,
+           assets: {
+             links: [
+               {
+                 name: "changelog-manager-create (Apple)",
+                 url: $create_apple_url
+                },
+                {
+                  name: "changelog-manager-merge (Apple)",
+                  url: $merge_apple_url
+                },
+               {
+                 name: "changelog-manager-create (Linux)",
+                 url: $create_linux_url
+                },
+                {
+                  name: "changelog-manager-merge (Linux)",
+                  url: $merge_linux_url
+                }
+              ]
+            }
+          }
+          '
+      )
+    - echo "Request body - $JSON_DATA"
+    - >
+      curl "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" \
+        -X POST \
+        -H "PRIVATE-TOKEN: $GITLAB_JENKINS_PRIVATE_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "$JSON_DATA" -i --fail-with-body
+  rules:
+    - if: "$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
+      when: manual
+    - when: never
+
+push_binaries:
+  stage: iaire
+  interruptible: true
+  needs:
+    - build
+  script:
+    - >
+      curl \
+        --request PUT \
+        --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
+        $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager-create/$CI_COMMIT_TAG/changelog-manager-create-x86_64-apple \
+        --upload-file x86_64-apple/changelog-manager-create
+    - >
+      curl \
+        --request PUT \
+        --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
+        $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager-merge/$CI_COMMIT_TAG/changelog-manager-merge-x86_64-apple \
+        --upload-file x86_64-apple/changelog-manager-merge
+    - >
+      curl \
+        --request PUT \
+        --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
+        $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager-create/$CI_COMMIT_TAG/changelog-manager-create-x86_64-linux \
+        --upload-file x86_64-linux/changelog-manager-create
+    - >
+      curl \
+        --request PUT \
+        --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
+        $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager-merge/$CI_COMMIT_TAG/changelog-manager-merge-x86_64-linux \
+        --upload-file x86_64-linux/changelog-manager-merge
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: on_success
+    - when: never
+
+notification:
+  stage: iaire
+  needs:
+    - push_binaries
+  extends: .send_changelog
+
+diff_since_last_release:
+  stage: iaire
+  extends: .diff-since-last-release
