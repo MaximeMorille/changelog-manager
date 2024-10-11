@@ -1,4 +1,7 @@
-use std::{fs::File, io::prelude::*};
+use std::{
+    fs::File,
+    io::prelude::*,
+};
 
 const UNRELEASED_CHANGELOGS_FOLDER: &str = "unreleased_changelogs";
 const DEFAULT_CHANGELOG_PATH: &str = "CHANGELOG.md";
@@ -35,12 +38,9 @@ pub fn read_entries() -> Vec<String> {
     let paths = std::fs::read_dir(UNRELEASED_CHANGELOGS_FOLDER)
         .expect("Unable to read directory")
         .map(|res| res.map(|e| e.path()))
-        .filter(|p| {
-            p.as_ref()
-                .is_ok_and(|p| p.extension() == Some("json".as_ref()))
-        })
-        .collect::<Result<Vec<_>, std::io::Error>>()
-        .expect("Error while collecting paths");
+        .map(|rp| rp.expect("This error cannot happen"))
+        .filter(|p|  p.extension() == Some("json".as_ref()))
+        .collect::<Vec<_>>();
 
     for path in paths {
         let content = std::fs::read_to_string(path).expect("Error while reading file");

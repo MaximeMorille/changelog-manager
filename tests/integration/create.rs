@@ -23,7 +23,7 @@ fn test_create() {
         "unreleased_changelogs should exist"
     );
 
-    Command::cargo_bin("changelog_manager")
+    Command::cargo_bin("changelog-manager")
         .expect("Failed to build binary")
         .arg("create")
         .arg("Some title")

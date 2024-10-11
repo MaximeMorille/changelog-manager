@@ -33,7 +33,7 @@ fn test_merge_entries() {
         "44",
     );
 
-    Command::cargo_bin("changelog_manager")
+    Command::cargo_bin("changelog-manager")
         .expect("Failed to build binary")
         .arg("merge")
         .arg("1.0.0")
