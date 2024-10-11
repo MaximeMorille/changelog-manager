@@ -37,8 +37,8 @@ pub fn read_entries() -> Vec<String> {
     let mut entries = Vec::new();
     let paths = std::fs::read_dir(UNRELEASED_CHANGELOGS_FOLDER)
         .expect("Unable to read directory")
-        .map(|res| res.map(|e| e.path()))
-        .map(|rp| rp.expect("This error cannot happen"))
+        .map(|rd| rd.expect("This error cannot happen"))
+        .map(|de| de.path())
         .filter(|p|  p.extension() == Some("json".as_ref()))
         .collect::<Vec<_>>();
 
