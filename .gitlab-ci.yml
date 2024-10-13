@@ -15,16 +15,19 @@ build:
   stage: iaire
   interruptible: true
   script:
-    - rustup target add x86_64-unknown-linux-musl
-    - cargo build --release --target x86_64-apple-darwin --target x86_64-unknown-linux-musl
+    - rustup target add x86_64-unknown-linux-musl aarch64-apple-darwin
+    - cargo build --release --target x86_64-apple-darwin --target x86_64-unknown-linux-musl --target aarch64-apple-darwin
     - mkdir x86_64-apple
     - mkdir x86_64-linux
+    - mkdir arm64-apple
     - mv target/x86_64-apple-darwin/release/changelog-manager x86_64-apple
     - mv target/x86_64-unknown-linux-musl/release/changelog-manager x86_64-linux
+    - mv target/aarch64-apple-darwin/release/changelog-manager arm64-apple
   artifacts:
     paths:
       - x86_64-apple
       - x86_64-linux
+      - arm64-apple
 
 lint:
   image: registry.ipleanware.com/gitlab-ci/rust:1.81.0
@@ -64,6 +67,7 @@ create_release:
          --arg commit "$CI_COMMIT_SHA" \
          --arg apple_url "${PKG_URL}-x86_64-apple" \
          --arg linux_url "${PKG_URL}-x86_64-linux" \
+         --arg arm_apple_url "${PKG_URL}-arm64-apple" \
          '
          {
            name: $version,
@@ -73,13 +77,17 @@ create_release:
            ref: $commit,
            assets: {
              links: [
-               {
-                 name: "changelog-manager (Apple)",
-                 url: $apple_url
+                {
+                  name: "changelog-manager (x86_64 Apple)",
+                  url: $apple_url
                 },
-               {
-                 name: "changelog-manager (Linux)",
-                 url: $linux_url
+                {
+                  name: "changelog-manager (x86_64 Linux)",
+                  url: $linux_url
+                },
+                {
+                  name: "changelog-manager (arm64 Apple)",
+                  url: $arm_apple_url
                 }
               ]
             }
@@ -116,6 +124,12 @@ push_binaries:
         --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
         $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$CI_COMMIT_TAG/changelog-manager-x86_64-linux \
         --upload-file x86_64-linux/changelog-manager
+    - >
+      curl \
+        --request PUT \
+        --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
+        $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$CI_COMMIT_TAG/changelog-manager-arm64-apple \
+        --upload-file arm64-linux/changelog-manager
   rules:
     - if: $CI_COMMIT_TAG
       when: on_success

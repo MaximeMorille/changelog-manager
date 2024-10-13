@@ -14,6 +14,11 @@ pub fn setup_test_env() -> TempDir {
     Command::new("git").args(["init"]).assert().success();
 
     Command::new("git")
+        .args(["config", "--local", "user.email", "test.user@mail.com"])
+        .assert()
+        .success();
+
+    Command::new("git")
         .args(["config", "--local", "user.name", "Test User"])
         .assert()
         .success();
