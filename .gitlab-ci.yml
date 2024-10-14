@@ -46,7 +46,8 @@ test:
   coverage: /TOTAL( *\d+ *\d+ *([\d\.]+)%){3}/
   script:
     - cargo install cargo-llvm-cov cargo-nextest
-    - cargo llvm-cov nextest --cobertura --output-path cobertura_report.xml
+    - cargo llvm-cov nextest
+    - cargo llvm-cov report --cobertura --output-path cobertura_report.xml
   artifacts:
     reports:
       coverage_report:
