@@ -43,14 +43,15 @@ test:
   image: registry.ipleanware.com/gitlab-ci/rust:1.81.0
   stage: iaire
   interruptible: true
+  coverage: /TOTAL( *\d+ *\d+ *([\d\.]+)%){3}/
   script:
     - cargo install cargo-llvm-cov cargo-nextest
-    - cargo llvm-cov nextest
+    - cargo llvm-cov nextest --cobertura --output-path cobertura_report.xml
   artifacts:
-    when: on_success
-    expire_in: "1 days"
-    paths:
-      - target/llvm-cov
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: cobertura_report.xml
 
 create_release:
   stage: iaire
