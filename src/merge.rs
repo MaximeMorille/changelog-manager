@@ -48,8 +48,9 @@ fn entries_to_string(
         date.unwrap_or(Local::now()).format("%Y-%m-%d")
     ));
 
-    entry_map.iter().for_each(|(key, value)| {
+    entry_map.iter_mut().for_each(|(key, value)| {
         content.push_str(&format!("\n### {}\n\n", key));
+        value.sort_by(Entry::compare);
         value.iter().for_each(|entry| {
             content.push_str(&entry.to_markdown());
         });
@@ -102,7 +103,7 @@ mod tests {
                 .build(),
         ];
 
-        let expected = "## [1.0.0] - 2021-08-01\n\n### Added\n\n- [Some title](42)\n- [Another title](43)\n\n### Removed\n\n- [**BREAKING CHANGE** A final title](64)\n  A random description\n";
+        let expected = "## [1.0.0] - 2021-08-01\n\n### Added\n\n- [Another title](43)\n- [Some title](42)\n\n### Removed\n\n- [**BREAKING CHANGE** A final title](64)\n  A random description\n";
         let date = Local.with_ymd_and_hms(2021, 8, 1, 0, 0, 0);
         assert_eq!(
             expected,

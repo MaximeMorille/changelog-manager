@@ -83,6 +83,10 @@ impl Entry {
             description = description
         )
     }
+
+    pub fn compare(a: &&Self, b: &&Self) -> std::cmp::Ordering {
+        b.is_breaking_change.cmp(&a.is_breaking_change).then_with(|| a.title.cmp(&b.title))
+    }
 }
 
 #[derive(Default)]
@@ -282,5 +286,74 @@ mod tests {
     #[test]
     fn test_entry_type_from_str_invalid() {
         assert!(EntryType::from_str("INVALID").is_err());
+    }
+
+    #[test]
+    fn test_entry_compare_with_no_breaking_change() {
+        let entry1 = Entry {
+            author: "Maxime Morille".to_string(),
+            title: "A title coming first in alphabetical order".to_string(),
+            r#type: EntryType::Added,
+            issue: "123".to_string(),
+            description: None,
+            is_breaking_change: false,
+        };
+
+        let entry2 = Entry {
+            author: "Maxime Morille".to_string(),
+            title: "A title coming second in alphabetical order".to_string(),
+            r#type: EntryType::Added,
+            issue: "123".to_string(),
+            description: None,
+            is_breaking_change: false,
+        };
+
+        assert_eq!(Entry::compare(&&entry1, &&entry2), std::cmp::Ordering::Less);
+    }
+
+    #[test]
+    fn test_entry_compare_with_one_breaking_change() {
+        let entry1 = Entry {
+            author: "Maxime Morille".to_string(),
+            title: "A title coming first in alphabetical order".to_string(),
+            r#type: EntryType::Added,
+            issue: "123".to_string(),
+            description: None,
+            is_breaking_change: false,
+        };
+
+        let entry2 = Entry {
+            author: "Maxime Morille".to_string(),
+            title: "A title coming second in alphabetical order, with a breaking change, should be first".to_string(),
+            r#type: EntryType::Added,
+            issue: "123".to_string(),
+            description: None,
+            is_breaking_change: true,
+        };
+
+        assert_eq!(Entry::compare(&&entry1, &&entry2), std::cmp::Ordering::Greater);
+    }
+
+    #[test]
+    fn test_entry_compare_with_two_breaking_change() {
+        let entry1 = Entry {
+            author: "Maxime Morille".to_string(),
+            title: "A title coming first in alphabetical order".to_string(),
+            r#type: EntryType::Added,
+            issue: "123".to_string(),
+            description: None,
+            is_breaking_change: true,
+        };
+
+        let entry2 = Entry {
+            author: "Maxime Morille".to_string(),
+            title: "A title coming second in alphabetical order".to_string(),
+            r#type: EntryType::Added,
+            issue: "123".to_string(),
+            description: None,
+            is_breaking_change: true,
+        };
+
+        assert_eq!(Entry::compare(&&entry1, &&entry2), std::cmp::Ordering::Less);
     }
 }

@@ -62,8 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- [Some title](42)
 - [**BREAKING CHANGE** Some title](44)
+- [Some title](42)
 
 "#,
         content
