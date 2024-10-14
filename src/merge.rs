@@ -50,7 +50,7 @@ fn entries_to_string(
 
     entry_map.iter_mut().for_each(|(key, value)| {
         content.push_str(&format!("\n### {}\n\n", key));
-        value.sort_by(Entry::compare);
+        value.sort();
         value.iter().for_each(|entry| {
             content.push_str(&entry.to_markdown());
         });

@@ -48,7 +48,7 @@ impl Display for EntryType {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Entry {
     author: String,
@@ -83,9 +83,19 @@ impl Entry {
             description = description
         )
     }
+}
 
-    pub fn compare(a: &&Self, b: &&Self) -> std::cmp::Ordering {
-        b.is_breaking_change.cmp(&a.is_breaking_change).then_with(|| a.title.cmp(&b.title))
+impl Ord for Entry {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.is_breaking_change
+            .cmp(&self.is_breaking_change)
+            .then_with(|| self.title.cmp(&other.title))
+    }
+}
+
+impl PartialOrd for Entry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -308,7 +318,7 @@ mod tests {
             is_breaking_change: false,
         };
 
-        assert_eq!(Entry::compare(&&entry1, &&entry2), std::cmp::Ordering::Less);
+        assert_eq!(entry1.cmp(&entry2), std::cmp::Ordering::Less);
     }
 
     #[test]
@@ -331,7 +341,7 @@ mod tests {
             is_breaking_change: true,
         };
 
-        assert_eq!(Entry::compare(&&entry1, &&entry2), std::cmp::Ordering::Greater);
+        assert_eq!(entry1.cmp(&entry2), std::cmp::Ordering::Greater);
     }
 
     #[test]
@@ -354,6 +364,6 @@ mod tests {
             is_breaking_change: true,
         };
 
-        assert_eq!(Entry::compare(&&entry1, &&entry2), std::cmp::Ordering::Less);
+        assert_eq!(entry1.cmp(&entry2), std::cmp::Ordering::Less);
     }
 }
