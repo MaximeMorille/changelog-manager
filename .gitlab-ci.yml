@@ -11,11 +11,12 @@ image: registry.ipleanware.com/gitlab-ci/alpine/base
 # Do not declare stages here anymore
 
 build:
-  image: registry.ipleanware.com/gitlab-ci/rust:1.81.0
+  image: joseluisq/rust-linux-darwin-builder:1.81.0
   stage: iaire
   interruptible: true
   script:
-    - rustup target add x86_64-unknown-linux-musl aarch64-apple-darwin
+    # - rustup target add x86_64-unknown-linux-musl aarch64-apple-darwin
+    # - cargo install cross --git https://github.com/cross-rs/cross
     - cargo build --release --target x86_64-apple-darwin --target x86_64-unknown-linux-musl --target aarch64-apple-darwin
     - mkdir x86_64-apple
     - mkdir x86_64-linux
@@ -44,7 +45,7 @@ test:
   interruptible: true
   script:
     - cargo install cargo-llvm-cov cargo-nextest
-    - cargo llvm-cov nextest --html
+    - cargo llvm-cov nextest
   artifacts:
     when: on_success
     expire_in: "1 days"
