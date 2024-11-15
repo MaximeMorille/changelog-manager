@@ -1,3 +1,23 @@
+/// This module provides functionality for managing file system operations.
+/// 
+/// It includes utilities for working with files, such as reading from and writing to files.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use std::fs::File;
+/// use std::io::prelude::*;
+/// 
+/// // Example of opening a file and reading its contents
+/// let mut file = File::open("example.txt").expect("Unable to open file");
+/// let mut contents = String::new();
+/// file.read_to_string(&mut contents).expect("Unable to read file");
+/// println!("{}", contents);
+/// 
+/// // Example of creating a file and writing to it
+/// let mut file = File::create("example.txt").expect("Unable to create file");
+/// file.write_all(b"Hello, world!").expect("Unable to write to file");
+/// ```
 use std::{
     fs::File,
     io::prelude::*,

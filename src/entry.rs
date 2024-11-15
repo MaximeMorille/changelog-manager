@@ -5,6 +5,20 @@ use std::{
     str::FromStr,
 };
 
+/// Represents the type of an entry in the changelog.
+/// 
+/// The `EntryType` enum is used to categorize the type of changes made in the project.
+/// It derives several traits to facilitate comparison, serialization, and debugging.
+/// 
+/// # Variants
+/// 
+/// - `Added`: Represents an addition of a new feature.
+/// - `Changed`: Represents a change in existing functionality. This is the default variant.
+/// - `Fixed`: Represents a bug fix.
+/// - `Removed`: Represents the removal of a feature.
+/// - `Deprecated`: Represents a deprecated feature.
+/// - `Security`: Represents a security-related change.
+/// - `Technical`: Represents a technical change that doesn't fit into the other categories.
 #[derive(Default, Serialize, Deserialize, PartialEq, Debug, Eq, Hash, Ord, PartialOrd)]
 pub enum EntryType {
     Added,
@@ -17,6 +31,13 @@ pub enum EntryType {
     Technical,
 }
 
+/// Implements the `FromStr` trait for `EntryType`.
+/// 
+/// This allows for converting a string representation of an entry type into an `EntryType` enum.
+/// 
+/// # Errors
+/// 
+/// Returns `Err(())` if the string does not match any of the known entry types.
 impl FromStr for EntryType {
     type Err = ();
 
@@ -34,6 +55,9 @@ impl FromStr for EntryType {
     }
 }
 
+/// Implements the `Display` trait for `EntryType`.
+/// 
+/// This allows for converting an `EntryType` enum into its string representation.
 impl Display for EntryType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -48,6 +72,19 @@ impl Display for EntryType {
     }
 }
 
+/// Represents an entry in the changelog.
+/// 
+/// The `Entry` struct contains information about a specific change made in the project.
+/// It includes details such as the author, title, description, type of change, whether it's a breaking change, and the associated issue.
+/// 
+/// # Fields
+/// 
+/// - `author`: The author of the change.
+/// - `title`: The title of the change.
+/// - `description`: An optional description of the change.
+/// - `type`: The type of the change, represented by the `EntryType` enum.
+/// - `is_breaking_change`: A boolean indicating if the change is a breaking change.
+/// - `issue`: The associated issue for the change.
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Entry {
@@ -59,11 +96,14 @@ pub struct Entry {
     issue: String,
 }
 
+/// Implements methods for the `Entry` struct.
 impl Entry {
+    /// Creates a new `EntryBuilder` instance.
     pub fn builder() -> EntryBuilder {
         EntryBuilder::default()
     }
 
+    /// Converts the `Entry` instance to a markdown string representation.
     pub fn to_markdown(&self) -> String {
         let prefix = match self.is_breaking_change {
             true => "**BREAKING CHANGE** ",
@@ -85,6 +125,9 @@ impl Entry {
     }
 }
 
+/// Implements the `Ord` trait for `Entry`.
+/// 
+/// Entries are compared first by whether they are breaking changes, and then by their titles.
 impl Ord for Entry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.is_breaking_change
@@ -93,12 +136,17 @@ impl Ord for Entry {
     }
 }
 
+/// Implements the `PartialOrd` trait for `Entry`.
 impl PartialOrd for Entry {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
+/// Builder for creating `Entry` instances.
+/// 
+/// The `EntryBuilder` struct provides a builder pattern for constructing `Entry` instances.
+/// It allows for setting various fields before building the final `Entry` instance.
 #[derive(Default)]
 pub struct EntryBuilder {
     author: String,
@@ -109,6 +157,7 @@ pub struct EntryBuilder {
     issue: String,
 }
 
+/// Trait for building `Entry` instances.
 pub trait Builder {
     fn author(self, author: String) -> Self;
     fn title(self, title: String) -> Self;
@@ -119,11 +168,13 @@ pub trait Builder {
     fn build(self) -> Entry;
 }
 
+/// Trait for serializing and deserializing `Entry` instances.
 pub trait Serializable {
     fn to_json(&self) -> String;
     fn from_json(json: &String) -> Self;
 }
 
+/// Implements the `Serializable` trait for `Entry`.
 impl Serializable for Entry {
     fn to_json(&self) -> String {
         let formatter = PrettyFormatter::with_indent(b"    ");
@@ -141,6 +192,7 @@ impl Serializable for Entry {
     }
 }
 
+/// Implements the `Builder` trait for `EntryBuilder`.
 impl Builder for EntryBuilder {
     fn author(mut self, author: String) -> Self {
         self.author = author;

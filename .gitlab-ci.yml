@@ -48,7 +48,10 @@ test:
     - cargo install cargo-llvm-cov cargo-nextest
     - cargo llvm-cov nextest
     - cargo llvm-cov report --cobertura --output-path cobertura_report.xml
+    - cargo llvm-cov report --html --output-dir coverage
   artifacts:
+    paths:
+      - coverage
     reports:
       coverage_report:
         coverage_format: cobertura
@@ -132,7 +135,7 @@ push_binaries:
         --request PUT \
         --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
         $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$CI_COMMIT_TAG/changelog-manager-arm64-apple \
-        --upload-file arm64-linux/changelog-manager
+        --upload-file arm64-apple/changelog-manager
   rules:
     - if: $CI_COMMIT_TAG
       when: on_success
