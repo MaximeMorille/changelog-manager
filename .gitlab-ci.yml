@@ -60,11 +60,26 @@ test:
 create_release:
   stage: iaire
   interruptible: true
-  variables:
-    VERSION: ""
-    RELEASE_CONTENT: ""
+  image: registry.ipleanware.com/gitlab-ci/rust:1.81.0
   script:
+    - cargo install cargo-edit
+    - VERSION=$(cargo pkgid | cut -d '#' -f 2)
+    - RELEASE_CONTENT=$(cargo run merge $VERSION)
+    - repo_url=$(echo $CI_PROJECT_URL | sed "s|https://|https://jenkins:${GITLAB_JENKINS_PRIVATE_TOKEN}@|")
+    - repo_url="${repo_url}.git"
+    - echo "Pushing to $repo_url"
     - echo "Try to create version $VERSION with content $RELEASE_CONTENT"
+    - exit 1
+    - git config add user.name "$GITLAB_USER_NAME"
+    - git config add user.email "$GITLAB_USER_EMAIL"
+    - git add CHANGELOG.md unreleased_changelogs/
+    - git commit -m "Prepare version $VERSION"
+    - git tag $VERSION -m "$RELEASE_CONTENT"
+    - cargo set-version --bump minor
+    - git add Cargo.toml
+    - git commit -m "Bump version to next minor version"
+    - git push "${repo_url}" --all
+    - git push "${repo_url}" --tags
     - PKG_URL="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$VERSION/changelog-manager"
     - >
       JSON_DATA=$(jq -n \

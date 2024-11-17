@@ -70,6 +70,19 @@ pub fn read_entries() -> Vec<String> {
     entries
 }
 
+pub fn clear_entries() {
+    let paths = std::fs::read_dir(UNRELEASED_CHANGELOGS_FOLDER)
+        .expect("Unable to read directory")
+        .map(|rd| rd.expect("This error cannot happen"))
+        .map(|de| de.path())
+        .filter(|p|  p.extension() == Some("json".as_ref()))
+        .collect::<Vec<_>>();
+
+    for path in paths {
+        std::fs::remove_file(&path).expect(&format!("Error while removing file {}", &path.display()));
+    }
+}
+
 pub fn write_changelog(content: String, changelog: &Option<String>) {
     let changelog_path = match changelog {
         Some(path) => path,

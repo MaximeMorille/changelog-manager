@@ -10,7 +10,8 @@ use crate::{
 pub fn merge_entries(version: &String, date: &Option<DateTime<Local>>, changelog: &Option<String>) {
     let entries = read_entries();
     let new_content = entries_to_string(entries, version, date);
-    fs_manager::write_changelog(new_content, changelog)
+    fs_manager::write_changelog(new_content, changelog);
+    fs_manager::clear_entries();
 }
 
 fn read_entries() -> Vec<Entry> {
@@ -48,14 +49,17 @@ fn entries_to_string(
         date.unwrap_or(Local::now()).format("%Y-%m-%d")
     ));
 
+    let mut release_notes = String::new();
     entry_map.iter_mut().for_each(|(key, value)| {
-        content.push_str(&format!("\n### {}\n\n", key));
+        release_notes.push_str(&format!("\n### {}\n\n", key));
         value.sort();
         value.iter().for_each(|entry| {
-            content.push_str(&entry.to_markdown());
+            release_notes.push_str(&entry.to_markdown());
         });
     });
+    println!("{}", release_notes);
 
+    content.push_str(&format!("\n{}\n", release_notes.trim()));
     content
 }
 
