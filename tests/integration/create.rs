@@ -32,7 +32,7 @@ fn test_create() {
         .arg("--description")
         .arg("A random description")
         .arg("--type")
-        .arg("ADDED")
+        .arg("added")
         .arg("--issue")
         .arg("42")
         .assert()

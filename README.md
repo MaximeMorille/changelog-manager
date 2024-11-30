@@ -8,6 +8,7 @@ This project aims to provide a CLI tool to manage CHANGELOG entries, in order to
 - [X] merge command to merge entries in the CHANGELOG
 - [ ] update CLI from Gitlab repository
 - [ ] interactive mode
+- [ ] autocomplete
 - [ ] manage a config from multiple sources (home directory, current directory, environment variables, CLI ?)
   - username
   - Gitlab's token to fetch issues in interactive mode, and validate the issue's existence in static mode

@@ -69,7 +69,6 @@ create_release:
     - repo_url="${repo_url}.git"
     - echo "Pushing to $repo_url"
     - echo "Try to create version $VERSION with content $RELEASE_CONTENT"
-    - exit 1
     - git config add user.name "$GITLAB_USER_NAME"
     - git config add user.email "$GITLAB_USER_EMAIL"
     - git add CHANGELOG.md unreleased_changelogs/

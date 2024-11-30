@@ -1,3 +1,4 @@
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use serde_json::{ser::PrettyFormatter, Serializer};
 use std::{
@@ -19,7 +20,7 @@ use std::{
 /// - `Deprecated`: Represents a deprecated feature.
 /// - `Security`: Represents a security-related change.
 /// - `Technical`: Represents a technical change that doesn't fit into the other categories.
-#[derive(Default, Serialize, Deserialize, PartialEq, Debug, Eq, Hash, Ord, PartialOrd)]
+#[derive(Default, Serialize, Deserialize, PartialEq, Debug, Eq, Hash, Ord, PartialOrd, Clone, ValueEnum)]
 pub enum EntryType {
     Added,
     #[default]
