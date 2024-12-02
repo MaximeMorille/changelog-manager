@@ -6,9 +6,8 @@ use changelog_manager::entry::{Builder, Entry, EntryType, Serializable};
 use pretty_assertions::assert_eq;
 
 fn assert_is_valid_json(filename: &str, expected_entry: &Entry) {
-    let entry = fs::read_to_string(filename)
-        .map(|content| Entry::from_json(&content))
-        .expect("Error while reading file");
+    let json = fs::read_to_string(filename).expect("Should read JSON file");
+    let entry = Entry::from_json(&json).expect("Should parse json to Entry");
 
     assert_eq!(entry, *expected_entry);
 }

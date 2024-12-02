@@ -60,5 +60,6 @@ pub fn add_entry(
         .is_breaking_change(is_breaking_change)
         .issue(issue.to_string())
         .build();
-    changelog_manager::create::create_changelog_entry(&entry, &branch.to_string());
+    changelog_manager::create::create_changelog_entry(&entry, &branch.to_string())
+        .expect("entry should be created");
 }

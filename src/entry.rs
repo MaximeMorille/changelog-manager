@@ -2,17 +2,18 @@ use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use serde_json::{ser::PrettyFormatter, Serializer};
 use std::{
+    error::Error,
     fmt::{Display, Formatter},
     str::FromStr,
 };
 
 /// Represents the type of an entry in the changelog.
-/// 
+///
 /// The `EntryType` enum is used to categorize the type of changes made in the project.
 /// It derives several traits to facilitate comparison, serialization, and debugging.
-/// 
+///
 /// # Variants
-/// 
+///
 /// - `Added`: Represents an addition of a new feature.
 /// - `Changed`: Represents a change in existing functionality. This is the default variant.
 /// - `Fixed`: Represents a bug fix.
@@ -20,7 +21,9 @@ use std::{
 /// - `Deprecated`: Represents a deprecated feature.
 /// - `Security`: Represents a security-related change.
 /// - `Technical`: Represents a technical change that doesn't fit into the other categories.
-#[derive(Default, Serialize, Deserialize, PartialEq, Debug, Eq, Hash, Ord, PartialOrd, Clone, ValueEnum)]
+#[derive(
+    Default, Serialize, Deserialize, PartialEq, Debug, Eq, Hash, Ord, PartialOrd, Clone, ValueEnum,
+)]
 pub enum EntryType {
     Added,
     #[default]
@@ -33,11 +36,11 @@ pub enum EntryType {
 }
 
 /// Implements the `FromStr` trait for `EntryType`.
-/// 
+///
 /// This allows for converting a string representation of an entry type into an `EntryType` enum.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns `Err(())` if the string does not match any of the known entry types.
 impl FromStr for EntryType {
     type Err = ();
@@ -57,7 +60,7 @@ impl FromStr for EntryType {
 }
 
 /// Implements the `Display` trait for `EntryType`.
-/// 
+///
 /// This allows for converting an `EntryType` enum into its string representation.
 impl Display for EntryType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -74,12 +77,12 @@ impl Display for EntryType {
 }
 
 /// Represents an entry in the changelog.
-/// 
+///
 /// The `Entry` struct contains information about a specific change made in the project.
 /// It includes details such as the author, title, description, type of change, whether it's a breaking change, and the associated issue.
-/// 
+///
 /// # Fields
-/// 
+///
 /// - `author`: The author of the change.
 /// - `title`: The title of the change.
 /// - `description`: An optional description of the change.
@@ -127,11 +130,12 @@ impl Entry {
 }
 
 /// Implements the `Ord` trait for `Entry`.
-/// 
+///
 /// Entries are compared first by whether they are breaking changes, and then by their titles.
 impl Ord for Entry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.is_breaking_change
+        other
+            .is_breaking_change
             .cmp(&self.is_breaking_change)
             .then_with(|| self.title.cmp(&other.title))
     }
@@ -145,7 +149,7 @@ impl PartialOrd for Entry {
 }
 
 /// Builder for creating `Entry` instances.
-/// 
+///
 /// The `EntryBuilder` struct provides a builder pattern for constructing `Entry` instances.
 /// It allows for setting various fields before building the final `Entry` instance.
 #[derive(Default)]
@@ -171,25 +175,24 @@ pub trait Builder {
 
 /// Trait for serializing and deserializing `Entry` instances.
 pub trait Serializable {
-    fn to_json(&self) -> String;
-    fn from_json(json: &String) -> Self;
+    fn to_json(&self) -> Result<String, Box<dyn Error>>;
+    fn from_json(json: &String) -> Result<Entry, serde_json::Error>;
 }
 
 /// Implements the `Serializable` trait for `Entry`.
 impl Serializable for Entry {
-    fn to_json(&self) -> String {
+    fn to_json(&self) -> Result<String, Box<dyn Error>> {
         let formatter = PrettyFormatter::with_indent(b"    ");
         let mut buffer = Vec::with_capacity(128);
 
         let mut writer = Serializer::with_formatter(&mut buffer, formatter);
-        self.serialize(&mut writer)
-            .expect("Failed to serialize Entry");
+        self.serialize(&mut writer)?;
 
-        String::from_utf8(buffer).expect("Plop")
+        Ok(String::from_utf8(buffer)?)
     }
 
-    fn from_json(_json: &String) -> Self {
-        serde_json::from_str(_json).expect("Failed to deserialize Entry")
+    fn from_json(_json: &String) -> Result<Entry, serde_json::Error> {
+        serde_json::from_str(_json)
     }
 }
 
@@ -256,7 +259,7 @@ mod tests {
             is_breaking_change: false,
         };
         assert_eq!(
-            entry.to_json(),
+            entry.to_json().expect("Should serialize to JSON"),
             r#"{
     "author": "Maxime Morille",
     "title": "Test",
@@ -279,7 +282,7 @@ mod tests {
             issue: "123".to_string(),
         };
         assert_eq!(
-            entry.to_json(),
+            entry.to_json().expect("Should serialize to JSON"),
             r#"{
     "author": "Maxime Morille",
     "title": "Test",

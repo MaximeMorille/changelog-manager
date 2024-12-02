@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::{io::Error, process::Command};
 
 pub struct GitInfo {
     branch: String,
@@ -6,23 +6,17 @@ pub struct GitInfo {
 }
 
 pub trait GitInfoProvider {
-    fn new() -> Self;
+    fn new() -> Result<GitInfo, Error>;
     fn get_branch(&self) -> &String;
     fn get_username(&self) -> String;
 }
 
 impl GitInfoProvider for GitInfo {
-    fn new() -> Self {
-        GitInfo {
-            username: execute_git_command(
-                ["config", "--get", "user.name"],
-                "Failed to get current git user",
-            ),
-            branch: execute_git_command(
-                ["rev-parse", "--abbrev-ref", "HEAD"],
-                "Failed to get current git branch",
-            ),
-        }
+    fn new() -> Result<GitInfo, Error> {
+        Ok(GitInfo {
+            username: execute_git_command(["config", "--get", "user.name"])?,
+            branch: execute_git_command(["rev-parse", "--abbrev-ref", "HEAD"])?,
+        })
     }
 
     fn get_branch(&self) -> &String {
@@ -34,11 +28,8 @@ impl GitInfoProvider for GitInfo {
     }
 }
 
-fn execute_git_command(git_args: [&str; 3], error_message: &str) -> String {
-    let output = Command::new("git")
-        .args(git_args)
-        .output()
-        .expect(error_message);
+fn execute_git_command(git_args: [&str; 3]) -> Result<String, Error> {
+    let output = Command::new("git").args(git_args).output()?;
 
     let result = if output.status.success() {
         String::from_utf8_lossy(&output.stdout).trim().to_string()
@@ -46,5 +37,5 @@ fn execute_git_command(git_args: [&str; 3], error_message: &str) -> String {
         String::from("Unknown")
     };
 
-    result
+    Ok(result)
 }

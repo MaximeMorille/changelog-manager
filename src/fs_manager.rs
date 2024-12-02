@@ -1,26 +1,10 @@
 /// This module provides functionality for managing file system operations.
-/// 
+///
 /// It includes utilities for working with files, such as reading from and writing to files.
-/// 
-/// # Examples
-/// 
-/// ```
-/// use std::fs::File;
-/// use std::io::prelude::*;
-/// 
-/// // Example of opening a file and reading its contents
-/// let mut file = File::open("example.txt").expect("Unable to open file");
-/// let mut contents = String::new();
-/// file.read_to_string(&mut contents).expect("Unable to read file");
-/// println!("{}", contents);
-/// 
-/// // Example of creating a file and writing to it
-/// let mut file = File::create("example.txt").expect("Unable to create file");
-/// file.write_all(b"Hello, world!").expect("Unable to write to file");
-/// ```
 use std::{
-    fs::File,
-    io::prelude::*,
+    fs::{self, File},
+    io::{self, prelude::*},
+    path::Path,
 };
 
 const UNRELEASED_CHANGELOGS_FOLDER: &str = "unreleased_changelogs";
@@ -35,81 +19,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 "#;
 
-pub fn write_entry(filename: String, buffer: String) {
-    check_folder_existence();
-    let mut file = File::create_new(format!(
+pub fn write_entry(filename: String, buffer: String) -> io::Result<()> {
+    check_folder_existence()?;
+    File::create_new(format!(
         "{}/{}.json",
         UNRELEASED_CHANGELOGS_FOLDER, filename
-    ))
-    .expect("Unable to create file");
-
-    file.write_all(buffer.as_bytes())
-        .expect("Unable to write data");
+    ))?
+    .write_all(buffer.as_bytes())
 }
 
-fn check_folder_existence() {
-    if !std::path::Path::new(UNRELEASED_CHANGELOGS_FOLDER).exists() {
-        std::fs::create_dir(UNRELEASED_CHANGELOGS_FOLDER).expect("Unable to create folder");
+fn check_folder_existence() -> io::Result<()> {
+    if std::path::Path::new(UNRELEASED_CHANGELOGS_FOLDER).exists() {
+        Ok(())
+    } else {
+        std::fs::create_dir(UNRELEASED_CHANGELOGS_FOLDER)
     }
 }
 
-pub fn read_entries() -> Vec<String> {
+pub fn read_entries() -> Result<Vec<String>, io::Error> {
     let mut entries = Vec::new();
-    let paths = std::fs::read_dir(UNRELEASED_CHANGELOGS_FOLDER)
-        .expect("Unable to read directory")
+    let paths = std::fs::read_dir(UNRELEASED_CHANGELOGS_FOLDER)?
         .map(|rd| rd.expect("This error cannot happen"))
         .map(|de| de.path())
-        .filter(|p|  p.extension() == Some("json".as_ref()))
+        .filter(|p| p.extension() == Some("json".as_ref()))
         .collect::<Vec<_>>();
 
     for path in paths {
-        let content = std::fs::read_to_string(path).expect("Error while reading file");
+        let content = std::fs::read_to_string(path)?;
         entries.push(content);
     }
 
-    entries
+    Ok(entries)
 }
 
-pub fn clear_entries() {
-    let paths = std::fs::read_dir(UNRELEASED_CHANGELOGS_FOLDER)
-        .expect("Unable to read directory")
+pub fn clear_entries() -> io::Result<()> {
+    let paths = std::fs::read_dir(UNRELEASED_CHANGELOGS_FOLDER)?
         .map(|rd| rd.expect("This error cannot happen"))
         .map(|de| de.path())
-        .filter(|p|  p.extension() == Some("json".as_ref()))
+        .filter(|p| p.extension() == Some("json".as_ref()))
         .collect::<Vec<_>>();
 
     for path in paths {
-        std::fs::remove_file(&path).expect(&format!("Error while removing file {}", &path.display()));
+        std::fs::remove_file(&path)?;
     }
+
+    Ok(())
 }
 
-pub fn write_changelog(content: String, changelog: &Option<String>) {
+pub fn write_changelog(content: String, changelog: &Option<String>) -> io::Result<()> {
     let changelog_path = match changelog {
         Some(path) => path,
         None => &DEFAULT_CHANGELOG_PATH.to_string(),
     };
 
-    check_changelog_existence(changelog_path);
+    check_changelog_existence(changelog_path)?;
 
     if content.is_empty() {
-        return;
+        return Ok(());
     }
 
-    let current_content =
-        std::fs::read_to_string(changelog_path).expect("Error while reading file");
-    let new_content = current_content.replace(
+    let new_content = fs::read_to_string(changelog_path)?.replace(
         "## [Unreleased]\n",
         &format!("## [Unreleased]\n\n{}\n", content),
     );
-    std::fs::write(changelog_path, new_content).expect("Error while writing file");
+    std::fs::write(changelog_path, new_content)
 }
 
-fn check_changelog_existence(changelog_path: &String) {
-    if !std::path::Path::new(changelog_path).exists() {
-        std::fs::create_dir_all(std::path::Path::new(changelog_path).parent().unwrap())
-            .expect("Unable to create folder");
-        std::fs::write(changelog_path, BASE_CHANGELOG_CONTENT).expect("Unable to create folder");
+fn check_changelog_existence(changelog_path: &String) -> io::Result<()> {
+    if !Path::new(changelog_path).exists() {
+        fs::create_dir_all(Path::new(changelog_path).parent().unwrap())?;
+        fs::write(changelog_path, BASE_CHANGELOG_CONTENT)?;
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -126,14 +108,14 @@ mod tests {
 
     fn setup_test_dir() -> TempDir {
         let root = TempDir::new().unwrap();
-        env::set_current_dir(&root).expect("Failed to setup root testing directory");
+        env::set_current_dir(&root).expect("current dir should be set to temp dir");
         root
     }
 
     #[test]
     fn test_write_entry() {
         let temp_dir = setup_test_dir();
-        write_entry("test".to_string(), "test".to_string());
+        write_entry("test".to_string(), "test".to_string()).expect("entry should be written");
 
         assert!(std::path::Path::new("unreleased_changelogs/test.json").exists());
         drop(temp_dir);
@@ -146,7 +128,7 @@ mod tests {
             .child("unreleased_changelogs")
             .create_dir_all()
             .expect("Failed to create unreleased_changelogs directory");
-        let entries = read_entries();
+        let entries = read_entries().expect("entries should be read");
         assert!(entries.is_empty());
         drop(temp_dir);
     }
@@ -169,10 +151,11 @@ mod tests {
     "isBreakingChange": false,
     "issue": "https://gitlab.url/issues/43"
 }"#;
-        write_entry("first".to_string(), first_entry.to_string());
-        write_entry("second".to_string(), second_entry.to_string());
+        write_entry("first".to_string(), first_entry.to_string()).expect("entry should be written");
+        write_entry("second".to_string(), second_entry.to_string())
+            .expect("entry should be written");
 
-        let entries = read_entries();
+        let entries = read_entries().expect("entries should be read");
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[0], first_entry);
         drop(temp_dir);
@@ -192,7 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 "#;
 
-        super::write_changelog("".to_string(), &None);
+        super::write_changelog("".to_string(), &None).expect("Error while writing changelog");
 
         let file_content =
             std::fs::read_to_string(&changelog_path).expect("Error while reading file");
@@ -219,7 +202,8 @@ New content
         super::write_changelog(
             "New content".to_string(),
             &Some("./subfolder/CHANGELOG.md".to_string()),
-        );
+        )
+        .expect("Error while writing changelog");
 
         let file_content =
             std::fs::read_to_string(&changelog_path).expect("Error while reading file");
@@ -268,7 +252,8 @@ New content
 "#;
 
         fs::write(&changelog_path, existing_content).expect("Error while writing file");
-        super::write_changelog("New content".to_string(), &None);
+        super::write_changelog("New content".to_string(), &None)
+            .expect("error while updating changelog");
 
         let file_content =
             std::fs::read_to_string(&changelog_path).expect("Error while reading file");

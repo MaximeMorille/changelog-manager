@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::error::Error;
 
 use changelog_manager::{
     create,
@@ -64,7 +64,10 @@ struct EntryFields {
     description: Option<String>,
 }
 
-fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
+fn process_static_input<I: GitInfoProvider>(
+    fields: &EntryFields,
+    info: I,
+) -> Result<(), Box<dyn Error>> {
     // call git to get the current user
     let default_user = info.get_username();
 
@@ -80,9 +83,9 @@ fn process_static_input<I: GitInfoProvider>(fields: &EntryFields, info: I) {
     create::create_changelog_entry(&entry, info.get_branch())
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    let git_info = GitInfo::new();
+    let git_info = GitInfo::new()?;
 
     match &cli.command {
         Some(Commands::Update {}) => {
@@ -95,7 +98,7 @@ fn main() {
             if *interactive {
                 create::start_interactive_mode(git_info);
             } else {
-                process_static_input(create_options, git_info);
+                process_static_input(create_options, git_info)?;
             }
         }
         Some(Commands::Merge {
@@ -103,10 +106,11 @@ fn main() {
             date,
             changelog,
         }) => {
-            merge::merge_entries(version, date, changelog);
+            merge::merge_entries(version, date, changelog)?;
         }
         None => {}
     }
+    Ok(())
 }
 
 #[cfg(test)]
