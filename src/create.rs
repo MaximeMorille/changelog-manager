@@ -38,9 +38,15 @@ pub fn start_interactive_mode(info: GitInfo) {
 /// create_changelog_entry(&entry, &branch);
 /// ```
 pub fn create_changelog_entry(entry: &Entry, branch: &String) -> Result<(), Box<dyn Error>> {
-    let filename = slugify(branch);
-    let buffer = entry.to_json()?;
-    Ok(write_entry(filename, buffer)?)
+    let filename = format!("{}.json", slugify(branch));
+    let buffer = match entry.to_json() {
+        Ok(buffer) => buffer,
+        Err(e) => return Err(format!("Error while serializing entry: {}", e).into()),
+    };
+    match write_entry(&filename, buffer) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Error while writing entry in file '{}': {}", &filename, e).into()),
+    }
 }
 
 #[cfg(test)]

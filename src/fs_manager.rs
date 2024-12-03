@@ -19,13 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 "#;
 
-pub fn write_entry(filename: String, buffer: String) -> io::Result<()> {
+pub fn write_entry(filename: &String, buffer: String) -> io::Result<()> {
     check_folder_existence()?;
-    File::create_new(format!(
-        "{}/{}.json",
-        UNRELEASED_CHANGELOGS_FOLDER, filename
-    ))?
-    .write_all(buffer.as_bytes())
+    File::create_new(format!("{}/{}", UNRELEASED_CHANGELOGS_FOLDER, &filename))?
+        .write_all(buffer.as_bytes())
 }
 
 fn check_folder_existence() -> io::Result<()> {
@@ -115,7 +112,7 @@ mod tests {
     #[test]
     fn test_write_entry() {
         let temp_dir = setup_test_dir();
-        write_entry("test".to_string(), "test".to_string()).expect("entry should be written");
+        write_entry(&"test.json".to_string(), "test".to_string()).expect("entry should be written");
 
         assert!(std::path::Path::new("unreleased_changelogs/test.json").exists());
         drop(temp_dir);
@@ -151,8 +148,9 @@ mod tests {
     "isBreakingChange": false,
     "issue": "https://gitlab.url/issues/43"
 }"#;
-        write_entry("first".to_string(), first_entry.to_string()).expect("entry should be written");
-        write_entry("second".to_string(), second_entry.to_string())
+        write_entry(&"first.json".to_string(), first_entry.to_string())
+            .expect("entry should be written");
+        write_entry(&"second.json".to_string(), second_entry.to_string())
             .expect("entry should be written");
 
         let entries = read_entries().expect("entries should be read");

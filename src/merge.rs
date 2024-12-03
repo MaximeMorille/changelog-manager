@@ -12,9 +12,26 @@ pub fn merge_entries(
     date: &Option<DateTime<Local>>,
     changelog: &Option<String>,
 ) -> Result<(), Box<dyn Error>> {
-    let entries = read_entries()?;
-    let new_content = entries_to_string(entries, version, date)?;
-    fs_manager::write_changelog(new_content, changelog)?;
+    let entries = match read_entries() {
+        Ok(entries) => entries,
+        Err(e) => return Err(format!("Error while reading entries: {}", e).into()),
+    };
+
+    let new_content = match entries_to_string(entries, version, date) {
+        Ok(content) => content,
+        Err(e) => {
+            return Err(format!(
+                "Error while generating CHANGELOG content from entries: {}",
+                e
+            )
+            .into())
+        }
+    };
+
+    if fs_manager::write_changelog(new_content, changelog).is_err() {
+        return Err("Error while writing changelog".into());
+    }
+
     Ok(fs_manager::clear_entries()?)
 }
 
