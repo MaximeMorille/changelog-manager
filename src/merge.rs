@@ -88,7 +88,7 @@ fn entries_to_string(
 #[cfg(test)]
 mod tests {
     use assert_fs::{
-        prelude::{PathChild, PathCreateDir},
+        prelude::{FileWriteStr, PathChild, PathCreateDir},
         TempDir,
     };
     use chrono::{Local, TimeZone};
@@ -96,7 +96,7 @@ mod tests {
 
     use crate::{
         entry::{Builder, Entry, EntryType},
-        merge::{entries_to_string, read_entries},
+        merge::{entries_to_string, merge_entries, read_entries},
     };
 
     #[test]
@@ -143,6 +143,27 @@ mod tests {
     }
 
     #[test]
+    fn test_empty_entries_to_string_without_date() {
+        let entries = vec![Entry::builder()
+            .author("username".to_string())
+            .title("Some title".to_string())
+            .issue("42".to_string())
+            .r#type(EntryType::Added)
+            .build()];
+        let expected_date = Local::now().format("%Y-%m-%d").to_string();
+        let expected = format!(
+            "## [1.0.0] - {}\n\n### Added\n\n- [Some title](42)\n",
+            expected_date
+        );
+
+        assert_eq!(
+            expected,
+            entries_to_string(entries, &"1.0.0".to_string(), &None)
+                .expect("Should parse entries to string")
+        );
+    }
+
+    #[test]
     fn test_read_empty_entries() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         std::env::set_current_dir(&temp_dir).expect("Failed to set current directory");
@@ -152,5 +173,23 @@ mod tests {
             .expect("Failed to create unreleased_changelogs directory");
         let entries = read_entries().expect("entries should be read");
         assert!(entries.is_empty());
+    }
+
+    #[test]
+    fn test_merge_invalid_entries() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        std::env::set_current_dir(&temp_dir).expect("Failed to set current directory");
+        temp_dir
+            .child("unreleased_changelogs")
+            .create_dir_all()
+            .expect("Failed to create unreleased_changelogs directory");
+        temp_dir
+            .child("unreleased_changelogs/entry.json")
+            .write_str("Invalid JSON")
+            .expect("Failed to write invalid json to entries file");
+        let entries = merge_entries(&"1.2.3".to_string(), &None, &None);
+        assert!(entries
+            .is_err_and(|e| e.to_string()
+                == "Error while reading entries: expected value at line 1 column 1"));
     }
 }

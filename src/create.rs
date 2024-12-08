@@ -33,7 +33,9 @@ pub fn start_interactive_mode(info: GitInfo) {
 /// # Example
 ///
 /// ```rust
-/// let entry = Entry::new("Added new feature", "Description of the new feature");
+/// use changelog_manager::entry::{Entry, Builder};
+/// use changelog_manager::create::create_changelog_entry;
+/// let entry = Entry::builder().title("Some title".to_string()).build();
 /// let branch = String::from("feature/new-feature");
 /// create_changelog_entry(&entry, &branch);
 /// ```
@@ -51,14 +53,33 @@ pub fn create_changelog_entry(entry: &Entry, branch: &String) -> Result<(), Box<
 
 #[cfg(test)]
 mod tests {
+    use assert_fs::TempDir;
+
     use crate::{
         create::start_interactive_mode,
+        entry::{Builder, Entry},
         git_info::{GitInfo, GitInfoProvider},
     };
+
+    use super::create_changelog_entry;
 
     #[test]
     #[should_panic]
     fn test_start_interactive_mode() {
         start_interactive_mode(GitInfo::new().expect("Should be able to get git info"));
+    }
+
+    #[test]
+    fn test_with_existing_branch() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        std::env::set_current_dir(&temp_dir).expect("Failed to set current directory");
+        let entry = Entry::builder().title("Some title".to_string()).build();
+        let branch = String::from("feature/new-feature");
+        create_changelog_entry(&entry, &branch).expect("First call should not panic");
+        let result = create_changelog_entry(&entry, &branch);
+        assert!(result.is_err_and(
+            |e| e.to_string().contains("Error while writing entry in file")
+                && e.to_string().contains("File exists")
+        ));
     }
 }

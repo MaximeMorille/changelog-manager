@@ -39,3 +39,14 @@ fn execute_git_command(git_args: [&str; 3]) -> Result<String, Error> {
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::git_info::execute_git_command;
+
+    #[test]
+    fn test_with_unknown_git_command() {
+        let result = execute_git_command(["unknown", "command", "args"]).expect("Should not fail");
+        assert_eq!(result, "Unknown");
+    }
+}
