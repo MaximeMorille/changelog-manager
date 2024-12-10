@@ -8,6 +8,7 @@ use changelog_manager::{
 };
 use chrono::{DateTime, Local};
 use clap::{Args, Parser, Subcommand};
+use human_panic::setup_panic;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -84,6 +85,8 @@ fn process_static_input<I: GitInfoProvider>(
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    setup_panic!();
+
     let cli = Cli::parse();
     let git_info = GitInfo::new()?;
 
