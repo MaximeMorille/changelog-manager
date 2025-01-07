@@ -81,39 +81,41 @@ create_release:
     - git push "${repo_url}" --tags
     - PKG_URL="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$VERSION/changelog-manager"
     - >
-      JSON_DATA=$(jq -n \
-         --arg version "$VERSION" \
-         --arg content "$RELEASE_CONTENT" \
-         --arg commit "$CI_COMMIT_SHA" \
-         --arg apple_url "${PKG_URL}-x86_64-apple" \
-         --arg linux_url "${PKG_URL}-x86_64-linux" \
-         --arg arm_apple_url "${PKG_URL}-arm64-apple" \
-         '
-         {
-           name: $version,
-           tag_name: $version,
-           tag_message: $content,
-           description: $content,
-           ref: $commit,
-           assets: {
-             links: [
-                {
-                  name: "changelog-manager (x86_64 Apple)",
-                  url: $apple_url
-                },
-                {
-                  name: "changelog-manager (x86_64 Linux)",
-                  url: $linux_url
-                },
-                {
-                  name: "changelog-manager (arm64 Apple)",
-                  url: $arm_apple_url
-                }
-              ]
-            }
-          }
-          '
-      )
+      JSON_DATA="{\"name\": \"$VERSION\", \"tag_name\": \"$VERSION\", \"tag_message\": \"$RELEASE_CONTENT\", \"description\": \"$RELEASE_CONTENT\", \"ref\": \"$CI_COMMIT_SHA\", \"assets\": {\"links\": [{\"name\": \"changelog-manager (x86_64 Apple)\", \"url\": \"$PKG_URL-x86_64-apple\"}, {\"name\": \"changelog-manager (x86_64 Linux)\", \"url\": \"$PKG_URL-x86_64-linux\"}, {\"name\": \"changelog-manager (arm64 Apple)\", \"url\": \"$PKG_URL-arm64-apple\"}]}}"
+    # - >
+    #   JSON_DATA=$(jq -n \
+    #      --arg version "$VERSION" \
+    #      --arg content "$RELEASE_CONTENT" \
+    #      --arg commit "$CI_COMMIT_SHA" \
+    #      --arg apple_url "${PKG_URL}-x86_64-apple" \
+    #      --arg linux_url "${PKG_URL}-x86_64-linux" \
+    #      --arg arm_apple_url "${PKG_URL}-arm64-apple" \
+    #      '
+    #      {
+    #        name: $version,
+    #        tag_name: $version,
+    #        tag_message: $content,
+    #        description: $content,
+    #        ref: $commit,
+    #        assets: {
+    #          links: [
+    #             {
+    #               name: "changelog-manager (x86_64 Apple)",
+    #               url: $apple_url
+    #             },
+    #             {
+    #               name: "changelog-manager (x86_64 Linux)",
+    #               url: $linux_url
+    #             },
+    #             {
+    #               name: "changelog-manager (arm64 Apple)",
+    #               url: $arm_apple_url
+    #             }
+    #           ]
+    #         }
+    #       }
+    #       '
+    #   )
     - echo "Request body - $JSON_DATA"
     - >
       curl "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" \
