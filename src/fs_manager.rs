@@ -46,6 +46,7 @@ pub fn read_entries() -> Result<Vec<String>, io::Error> {
         entries.push(content);
     }
 
+    entries.sort();
     Ok(entries)
 }
 
@@ -155,7 +156,7 @@ mod tests {
 
         let entries = read_entries().expect("entries should be read");
         assert_eq!(entries.len(), 2);
-        assert_eq!(entries[0], first_entry);
+        assert_eq!(entries[0], second_entry);
         drop(temp_dir);
     }
 
