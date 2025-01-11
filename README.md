@@ -1,5 +1,7 @@
 # Changelog manager
 
+[![codecov](https://codecov.io/github/MaximeMorille/changelog-manager/graph/badge.svg?token=C5FU08E7SM)](https://codecov.io/github/MaximeMorille/changelog-manager)
+
 This project aims to provide a CLI tool to manage CHANGELOG entries, in order to avoid the infamous [changelog conflict crisis](https://about.gitlab.com/blog/2018/07/03/solving-gitlabs-changelog-conflict-crisis/) (and, I cannot deny it, a side project to play with Rust).
 
 ## Missing features
