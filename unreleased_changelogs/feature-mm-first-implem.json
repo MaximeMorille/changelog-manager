@@ -1,8 +1,0 @@
-{
-    "author": "Maxime Morille",
-    "title": "First implementation of the changelog-manager",
-    "description": null,
-    "type": "Added",
-    "isBreakingChange": false,
-    "issue": "plop"
-}

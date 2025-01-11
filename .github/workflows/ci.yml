@@ -148,3 +148,19 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --no-deps --document-private-items --workspace
+  
+  danger:
+    runs-on: ubuntu-latest
+    name: Danger JS
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      statuses: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Danger
+        uses: danger/danger-js@12.3.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
