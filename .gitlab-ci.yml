@@ -1,0 +1,167 @@
+include:
+  - project: "braincube/misc/gitlabci-commons"
+    file:
+      - "gitlab-ci-default-workflow.yml"
+      - "gitlab-ci-send-changelog.yml"
+      - "gitlab-ci-diff-since-last-release.yml"
+    ref: "master"
+
+image: registry.ipleanware.com/gitlab-ci/alpine/base
+
+# Do not declare stages here anymore
+
+build:
+  image: joseluisq/rust-linux-darwin-builder:1.81.0
+  stage: iaire
+  interruptible: true
+  script:
+    # - rustup target add x86_64-unknown-linux-musl aarch64-apple-darwin
+    # - cargo install cross --git https://github.com/cross-rs/cross
+    - cargo build --release --target x86_64-apple-darwin --target x86_64-unknown-linux-musl --target aarch64-apple-darwin
+    - mkdir x86_64-apple
+    - mkdir x86_64-linux
+    - mkdir arm64-apple
+    - mv target/x86_64-apple-darwin/release/changelog-manager x86_64-apple
+    - mv target/x86_64-unknown-linux-musl/release/changelog-manager x86_64-linux
+    - mv target/aarch64-apple-darwin/release/changelog-manager arm64-apple
+  artifacts:
+    paths:
+      - x86_64-apple
+      - x86_64-linux
+      - arm64-apple
+
+lint:
+  image: registry.ipleanware.com/gitlab-ci/rust:1.81.0
+  stage: iaire
+  interruptible: true
+  script:
+    - rustup component add clippy rustfmt
+    - cargo fmt --all
+    - cargo clippy
+
+test:
+  image: registry.ipleanware.com/gitlab-ci/rust:1.81.0
+  stage: iaire
+  interruptible: true
+  coverage: /TOTAL( *\d+ *\d+ *([\d\.]+)%){3}/
+  script:
+    - cargo install cargo-llvm-cov cargo-nextest
+    - cargo llvm-cov nextest
+    - cargo llvm-cov report --cobertura --output-path cobertura_report.xml
+    - cargo llvm-cov report --html --output-dir coverage
+  artifacts:
+    paths:
+      - coverage
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: cobertura_report.xml
+
+create_release:
+  stage: iaire
+  interruptible: true
+  image: registry.ipleanware.com/gitlab-ci/rust:1.81.0
+  script:
+    - apt install -y jq
+    - cargo install cargo-edit
+    - VERSION=$(cargo pkgid | cut -d '#' -f 2)
+    - RELEASE_CONTENT=$(cargo run merge $VERSION)
+    - repo_url=$(echo $CI_PROJECT_URL | sed "s|https://|https://jenkins:${GITLAB_JENKINS_PRIVATE_TOKEN}@|")
+    - repo_url="${repo_url}.git"
+    - echo "Pushing to $repo_url"
+    - echo "Try to create version $VERSION with content $RELEASE_CONTENT"
+    - git config user.name "$GITLAB_USER_NAME"
+    - git config user.email "$GITLAB_USER_EMAIL"
+    - git add CHANGELOG.md unreleased_changelogs/
+    - git commit -m "Prepare version $VERSION"
+    - git tag $VERSION -m "$RELEASE_CONTENT"
+    - cargo set-version --bump minor
+    - git add Cargo.toml
+    - git commit -m "Bump version to next minor version"
+    - git push "${repo_url}" --all
+    - git push "${repo_url}" --tags
+    - PKG_URL="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$VERSION/changelog-manager"
+    - >
+      JSON_DATA=$(jq -n \
+         --arg version "$VERSION" \
+         --arg content "$RELEASE_CONTENT" \
+         --arg commit "$CI_COMMIT_SHA" \
+         --arg apple_url "${PKG_URL}-x86_64-apple" \
+         --arg linux_url "${PKG_URL}-x86_64-linux" \
+         --arg arm_apple_url "${PKG_URL}-arm64-apple" \
+         '
+         {
+           name: $version,
+           tag_name: $version,
+           tag_message: $content,
+           description: $content,
+           ref: $commit,
+           assets: {
+             links: [
+                {
+                  name: "changelog-manager (x86_64 Apple)",
+                  url: $apple_url
+                },
+                {
+                  name: "changelog-manager (x86_64 Linux)",
+                  url: $linux_url
+                },
+                {
+                  name: "changelog-manager (arm64 Apple)",
+                  url: $arm_apple_url
+                }
+              ]
+            }
+          }
+          '
+      )
+    - echo "Request body - $JSON_DATA"
+    - >
+      curl "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" \
+        -X POST \
+        -H "PRIVATE-TOKEN: $GITLAB_JENKINS_PRIVATE_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "$JSON_DATA" -i --fail-with-body
+  rules:
+    - if: "$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
+      when: manual
+    - when: never
+
+push_binaries:
+  stage: iaire
+  interruptible: true
+  needs:
+    - build
+  script:
+    - >
+      curl \
+        --request PUT \
+        --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
+        $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$CI_COMMIT_TAG/changelog-manager-x86_64-apple \
+        --upload-file x86_64-apple/changelog-manager
+    - >
+      curl \
+        --request PUT \
+        --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
+        $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$CI_COMMIT_TAG/changelog-manager-x86_64-linux \
+        --upload-file x86_64-linux/changelog-manager
+    - >
+      curl \
+        --request PUT \
+        --header "PRIVATE-TOKEN: $PUBLISH_BINARIES" \
+        $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/changelog-manager/$CI_COMMIT_TAG/changelog-manager-arm64-apple \
+        --upload-file arm64-apple/changelog-manager
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: on_success
+    - when: never
+
+notification:
+  stage: iaire
+  needs:
+    - push_binaries
+  extends: .send_changelog
+
+diff_since_last_release:
+  stage: iaire
+  extends: .diff-since-last-release
