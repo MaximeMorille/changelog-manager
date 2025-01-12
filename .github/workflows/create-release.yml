@@ -1,0 +1,53 @@
+name: Create release
+
+on:
+  workflow_dispatch:
+    inputs: {}
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.RELEASE_CREATOR_TOKEN }}
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+      
+      - name: Prepare version
+        id: prepare_version
+        run: |
+          version=$(cargo pkgid | cut -d '#' -f 2)
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_CONTENT<<EOF" >> "$GITHUB_ENV"
+          cargo run merge $version >> "$GITHUB_ENV"
+          echo "EOF" >> "$GITHUB_ENV"
+
+      - uses: EndBug/add-and-commit@v9
+        with:
+          add: 'CHANGELOG.md unreleased_changelogs/'
+          message: "Prepare version ${{ env.VERSION }}"
+          tag: '-a ${{ env.VERSION }} -m "${{ env.RELEASE_CONTENT }}"'
+          push: true
+
+      - name: Prepare next version
+        run: cargo set-version --bump minor
+
+      - uses: EndBug/add-and-commit@v9
+        with:
+          add: 'Cargo.toml'
+          message: "Bump version to next minor version"
+          push: true
+
+      - name: Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create ${{ env.VERSION }} --draft --verify-tag --title ${{ env.VERSION }} --notes '${{ env.RELEASE_CONTENT }}'
