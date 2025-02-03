@@ -4,7 +4,7 @@ use changelog_manager::{
     create,
     entry::{Builder, Entry, EntryType},
     git_info::{GitInfo, GitInfoProvider},
-    merge,
+    merge, update,
 };
 use chrono::{DateTime, Local};
 use clap::{Args, Parser, Subcommand};
@@ -86,13 +86,14 @@ fn process_static_input<I: GitInfoProvider>(
 
 fn main() -> Result<(), Box<dyn Error>> {
     setup_panic!();
+    update::check_for_updates()?;
 
     let cli = Cli::parse();
     let git_info = GitInfo::new()?;
 
     match &cli.command {
         Some(Commands::Update {}) => {
-            println!("Updating tool");
+            panic!("Update command not implemented yet");
         }
         Some(Commands::Create {
             create_options,
