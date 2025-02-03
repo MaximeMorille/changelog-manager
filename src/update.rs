@@ -50,9 +50,7 @@ fn get_latest_release() -> Result<Release, Error> {
             let release = r.json::<Release>()?;
             Ok(release)
         }
-        Err(err) => {
-            Err(err)
-        }
+        Err(err) => Err(err),
     }
 }
 
