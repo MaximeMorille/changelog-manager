@@ -48,10 +48,10 @@ fn get_latest_release() -> Result<Release, Error> {
     match response.error_for_status() {
         Ok(r) => {
             let release = r.json::<Release>()?;
-            return Ok(release);
+            Ok(release)
         }
         Err(err) => {
-            return Err(err);
+            Err(err)
         }
     }
 }
