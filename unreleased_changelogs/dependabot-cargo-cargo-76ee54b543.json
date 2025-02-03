@@ -1,0 +1,8 @@
+{
+    "author": "Maxime Morille",
+    "title": "Updates rustix to 0.38.8",
+    "description": null,
+    "type": "Technical",
+    "isBreakingChange": false,
+    "issue": "https://github.com/MaximeMorille/changelog-manager/security/dependabot/3"
+}
