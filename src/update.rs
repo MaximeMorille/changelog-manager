@@ -28,11 +28,14 @@ pub fn check_for_updates() -> Result<(), Error> {
 fn is_newer_release(release: &Release, current_version: &str) -> bool {
     let latest_version = release.tag_name.to_string();
 
-    return current_version.split('.').zip(latest_version.split('.')).any(|(a, b)| {
-        let a = a.parse::<u32>().unwrap();
-        let b = b.parse::<u32>().unwrap();
-        a < b
-    })
+    return current_version
+        .split('.')
+        .zip(latest_version.split('.'))
+        .any(|(a, b)| {
+            let a = a.parse::<u32>().unwrap();
+            let b = b.parse::<u32>().unwrap();
+            a < b
+        });
 }
 
 fn get_latest_release() -> Result<Release, Error> {
