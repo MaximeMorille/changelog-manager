@@ -2,8 +2,16 @@ use regex::Regex;
 use reqwest::{header::USER_AGENT, Error};
 use serde::Deserialize;
 
-const LATEST_RELEASE_URL: &str =
-    "http://api.github.com/repos/MaximeMorille/changelog-manager/releases/latest";
+pub trait UrlProvider {
+    fn get_latest_release_url(&self) -> String;
+}
+
+struct GithubUrlProvider;
+impl UrlProvider for GithubUrlProvider {
+    fn get_latest_release_url(&self) -> String {
+        "http://api.github.com/repos/MaximeMorille/changelog-manager/releases/latest".to_string()
+    }
+}
 
 #[derive(Deserialize, Debug)]
 struct Release {
@@ -12,8 +20,17 @@ struct Release {
 }
 
 pub fn check_for_updates() -> Result<(), Error> {
-    let latest_release = get_latest_release()?;
     let current_version = env!("CARGO_PKG_VERSION");
+    do_check_for_updates(GithubUrlProvider {}, current_version)
+}
+
+fn do_check_for_updates<T: UrlProvider>(
+    url_provider: T,
+    current_version: &str,
+) -> Result<(), Error> {
+    let url = url_provider.get_latest_release_url();
+
+    let latest_release = get_latest_release(url)?;
 
     if is_newer_release(&latest_release, current_version) {
         println!(
@@ -58,10 +75,10 @@ fn is_valid_semver_version(version: &str) -> bool {
     re.is_match(version)
 }
 
-fn get_latest_release() -> Result<Release, Error> {
+fn get_latest_release(url: String) -> Result<Release, Error> {
     let client = reqwest::blocking::Client::new();
     let response = client
-        .get(LATEST_RELEASE_URL)
+        .get(url)
         .header(USER_AGENT, "changelog-manager-client")
         .send()?;
 
@@ -77,7 +94,38 @@ fn get_latest_release() -> Result<Release, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use httpmock::MockServer;
     use pretty_assertions::assert_eq;
+
+    struct MockedUrlProvider {
+        server: MockServer,
+    }
+    impl UrlProvider for MockedUrlProvider {
+        fn get_latest_release_url(&self) -> String {
+            self.server.url("/releases/latest").to_string()
+        }
+    }
+
+    #[test]
+    fn test_do_check_for_updates() {
+        let server = MockServer::start();
+        server.mock(|when, then| {
+            when.method("GET").path("/releases/latest");
+            then.status(200)
+                .header("content-type", "application/json")
+                .body(
+                    r#"{
+                        "tag_name": "0.1.0",
+                        "html_url": "http://github.com"
+                    }"#,
+                );
+        });
+
+        let mocked_url_provider = MockedUrlProvider { server };
+
+        let result = do_check_for_updates(mocked_url_provider, "0.0.1");
+        assert!(result.is_ok());
+    }
 
     #[test]
     fn test_is_valid_semver_version() {
