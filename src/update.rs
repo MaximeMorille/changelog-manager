@@ -59,15 +59,17 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
-    #[test]
-    fn test_is_newer_release() {
+    #[rstest::rstest]
+    #[case("0.1.0", "0.0.1", true)]
+    #[case("0.1.0", "0.1.0", false)]
+    #[case("0.1.0", "0.1.1", false)]
+    #[case("2.1.3", "1.7.4", true)]
+    fn test_is_newer_release(#[case] release_tag: &str, #[case] current_version: &str, #[case] expected: bool) {
         let release = Release {
-            tag_name: "0.1.0".to_string(),
+            tag_name: release_tag.to_string(),
             html_url: "plop".to_string(),
         };
 
-        assert_eq!(is_newer_release(&release, "0.0.1"), true);
-        assert_eq!(is_newer_release(&release, "0.1.0"), false);
-        assert_eq!(is_newer_release(&release, "0.1.1"), false);
+        assert_eq!(is_newer_release(&release, current_version), expected);
     }
 }
