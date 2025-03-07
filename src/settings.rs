@@ -42,7 +42,6 @@ pub struct Updater {
 
 impl WeeklyCheck for Updater {
     fn is_older_than_week(&self) -> bool {
-        println!("last_check: {:?}", self.last_check);
         let last_check = match self.last_check {
             Some(ref s) => s,
             None => &"1970-01-01T00:00:00Z".to_string(),
