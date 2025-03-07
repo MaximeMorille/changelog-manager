@@ -4,7 +4,7 @@ use changelog_manager::{
     create,
     entry::{Builder, Entry, EntryType},
     git_info::{GitInfo, GitInfoProvider},
-    merge, update,
+    merge, settings, update,
 };
 use chrono::{DateTime, Local};
 use clap::{Args, Parser, Subcommand};
@@ -86,7 +86,9 @@ fn process_static_input<I: GitInfoProvider>(
 
 fn main() -> Result<(), Box<dyn Error>> {
     setup_panic!();
-    update::check_for_updates()?;
+
+    let mut settings = settings::Settings::new()?;
+    update::check_for_updates(&mut settings)?;
 
     let cli = Cli::parse();
     let git_info = GitInfo::new()?;
@@ -112,7 +114,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }) => {
             merge::merge_entries(version, date, changelog)?;
         }
-        None => {}
+        _none => {}
     }
     Ok(())
 }

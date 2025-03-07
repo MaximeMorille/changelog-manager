@@ -2,6 +2,8 @@ use regex::Regex;
 use reqwest::{header::USER_AGENT, Error};
 use serde::Deserialize;
 
+use crate::settings::{Persist, Settings, Update, WeeklyCheck};
+
 pub trait UrlProvider {
     fn get_latest_release_url(&self) -> String;
 }
@@ -14,20 +16,32 @@ impl UrlProvider for GithubUrlProvider {
 }
 
 #[derive(Deserialize, Debug)]
-struct Release {
-    tag_name: String,
-    html_url: String,
+pub struct Release {
+    pub tag_name: String,
+    pub html_url: String,
 }
 
-pub fn check_for_updates() -> Result<(), Error> {
+pub fn check_for_updates(settings: &mut Settings) -> Result<(), Box<dyn std::error::Error>> {
+    let updater = &mut settings.updater;
+    let is_older_than_week = updater.is_older_than_week();
+
+    if !is_older_than_week {
+        return Ok(());
+    }
+
     let current_version = env!("CARGO_PKG_VERSION");
-    do_check_for_updates(GithubUrlProvider {}, current_version)
+    let result = do_check_for_updates(GithubUrlProvider {}, current_version);
+
+    updater.update(result)?;
+    updater.persist()?;
+
+    Ok(())
 }
 
 fn do_check_for_updates<T: UrlProvider>(
     url_provider: T,
     current_version: &str,
-) -> Result<(), Error> {
+) -> Result<Release, Box<dyn std::error::Error>> {
     let url = url_provider.get_latest_release_url();
 
     let latest_release = get_latest_release(url)?;
@@ -40,7 +54,7 @@ fn do_check_for_updates<T: UrlProvider>(
         println!("You can download it from: {}", latest_release.html_url);
     }
 
-    Ok(())
+    Ok(latest_release)
 }
 
 fn is_newer_release(release: &Release, current_version: &str) -> bool {
