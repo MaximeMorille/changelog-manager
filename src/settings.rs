@@ -15,6 +15,16 @@ pub trait WeeklyCheck {
     fn is_older_than_week(&self) -> bool;
 }
 
+impl Default for Updater {
+    fn default() -> Self {
+        Updater {
+            last_check: None,
+            current_version: env!("CARGO_PKG_VERSION").to_string(),
+            latest_version: None,
+        }
+    }
+}
+
 pub trait Persist {
     fn persist(&self) -> Result<(), Box<dyn std::error::Error>>;
 }
@@ -38,9 +48,10 @@ impl WeeklyCheck for Updater {
             None => &"1970-01-01T00:00:00Z".to_string(),
         };
 
-        let last_check_date = chrono::DateTime::parse_from_rfc3339(last_check)
-            .unwrap()
-            .with_timezone(&chrono::Utc);
+        let last_check_date = match chrono::DateTime::parse_from_rfc3339(last_check) {
+            Ok(date) => date.with_timezone(&chrono::Utc),
+            Err(_) => return false,
+        };
         let now = chrono::Utc::now();
 
         (now - last_check_date).num_days() >= 7
@@ -61,7 +72,7 @@ impl Persist for Updater {
         if !parent_folder.exists() {
             fs::create_dir_all(parent_folder).expect("Failed to create settings directory");
         }
-        std::fs::write(updater_file_path, content).expect("Failed to write updater file");
+        std::fs::write(updater_file_path, content)?;
 
         Ok(())
     }
@@ -91,15 +102,19 @@ pub struct Settings {
     pub updater: Updater,
 }
 
+fn project_dirs() -> Option<ProjectDirs> {
+    ProjectDirs::from("eu", "morille", "changelog-manager")
+}
+
 fn settings_file_path() -> PathBuf {
-    match ProjectDirs::from("eu", "morille", "changelog-manager") {
+    match project_dirs() {
         Some(project_dirs) => PathBuf::from(project_dirs.config_dir()).join(SETTINGS_FILE),
         None => PathBuf::from(USER_SETTINGS_DIR).join(SETTINGS_FILE),
     }
 }
 
 fn updater_file_path() -> PathBuf {
-    match ProjectDirs::from("eu", "morille", "changelog-manager") {
+    match project_dirs() {
         Some(project_dirs) => PathBuf::from(project_dirs.config_dir()).join(UPDATER_FILE),
         None => PathBuf::from(USER_SETTINGS_DIR).join(UPDATER_FILE),
     }
@@ -133,11 +148,7 @@ mod tests {
 
     #[test]
     fn test_updater() {
-        let mut updater = Updater {
-            last_check: None,
-            current_version: env!("CARGO_PKG_VERSION").to_string(),
-            latest_version: None,
-        };
+        let mut updater: Updater = Default::default();
 
         let release = Release {
             tag_name: "0.1.0".to_string(),
