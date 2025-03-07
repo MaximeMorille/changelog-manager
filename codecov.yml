@@ -9,6 +9,7 @@ coverage:
 ignore:
   # Waiting for https://github.com/rust-lang/rust/issues/84605 resolution
   - "src/settings.rs"
+  - "src/main.rs"
 
 comment:
   layout: " diff, flags, files"
