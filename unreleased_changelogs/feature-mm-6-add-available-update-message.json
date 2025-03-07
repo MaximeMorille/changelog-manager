@@ -1,8 +1,0 @@
-{
-    "author": "Maxime Morille",
-    "title": "Add a message when a new release is available",
-    "description": null,
-    "type": "Added",
-    "isBreakingChange": false,
-    "issue": "https://github.com/MaximeMorille/changelog-manager/issues/6"
-}
