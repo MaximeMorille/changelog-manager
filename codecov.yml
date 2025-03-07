@@ -3,8 +3,12 @@ coverage:
     project:
       default:
         target: auto
-        threshold: 0%
-        base: auto 
+        threshold: 5%
+        base: auto
+
+ignore:
+  # Waiting for https://github.com/rust-lang/rust/issues/84605 resolution
+  - "src/settings.rs"
 
 comment:
   layout: " diff, flags, files"
