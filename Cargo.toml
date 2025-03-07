@@ -12,15 +12,21 @@ authors = ["Maxime Morille<maxime.morille@braincube.com>"]
 chrono = "0.4.38"
 clap = { version = "4.3.11", features = ["derive"] }
 config = "0.14.1"
+directories = "6.0.0"
+hashbrown = "0.15.2"
 human-panic = "2.0.2"
 pretty_assertions = "1.4.1"
+regex = "1.11.1"
+reqwest = { version = "0.12.12", features = ["blocking", "json"] }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = "1.0.128"
 slug = "0.1.6"
+toml = "0.8.20"
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
 assert_fs = "1.1.2"
+httpmock = "0.7.0"
 mockall = "0.13.0"
 predicates = "3.1.2"
 rstest = "0.23.0"
