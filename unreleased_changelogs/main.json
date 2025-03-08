@@ -1,0 +1,8 @@
+{
+    "author": "Maxime Morille",
+    "title": "Fix Linux build",
+    "description": null,
+    "type": "Fixed",
+    "isBreakingChange": false,
+    "issue": ""
+}

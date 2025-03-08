@@ -1,6 +1,6 @@
 [package]
 name = "changelog-manager"
-version = "0.3.0"
+version = "0.2.1"
 edition = "2021"
 description = "A tool to manage changelogs"
 homepage = "https://gitlab.ipleanware.com/Maxime.Morille/changelog-manager"
@@ -15,6 +15,7 @@ config = "0.14.1"
 directories = "6.0.0"
 hashbrown = "0.15.2"
 human-panic = "2.0.2"
+openssl = { version = "0.10", features = ["vendored"] }
 pretty_assertions = "1.4.1"
 regex = "1.11.1"
 reqwest = { version = "0.12.12", features = ["blocking", "json"] }

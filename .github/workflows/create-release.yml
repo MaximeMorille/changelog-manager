@@ -43,7 +43,7 @@ jobs:
 
       - uses: EndBug/add-and-commit@v9
         with:
-          add: 'Cargo.toml'
+          add: 'Cargo.toml Cargo.lock'
           message: "Bump version to next minor version"
           push: true
 
